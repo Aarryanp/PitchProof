@@ -5,8 +5,7 @@ import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in · Pitchproof" };
 
-// Screen 1: Sign in. Email link for now (Supabase Auth); Google can be added
-// once it is switched on in the Supabase dashboard.
+// Screen 1: Sign in. Google (main way) or an email link, both through Supabase Auth.
 export default function SignInPage() {
   return (
     <main className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-16">
@@ -15,7 +14,7 @@ export default function SignInPage() {
         <div className="rounded-lg border bg-background p-6">
           <h1 className="text-xl font-semibold">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            We&apos;ll email you a link. No password needed.
+            Use your Google account, or get a link by email. No password needed.
           </p>
           <Suspense>
             <SignInForm />
