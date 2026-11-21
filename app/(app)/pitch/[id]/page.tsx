@@ -19,7 +19,7 @@ export default function PitchPage({ params }: { params: Promise<{ id: string }> 
   return (
     <>
       <Link href="/pipeline" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Pipeline
+        <ArrowLeft className="size-4" /> Leads
       </Link>
       <Suspense fallback={<Loading />}>
         <Review params={params} />

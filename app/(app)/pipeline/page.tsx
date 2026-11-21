@@ -10,8 +10,9 @@ import { Loading } from "@/components/loading";
 import { PageHeader } from "@/components/page-header";
 import { SampleNote } from "@/components/sample-note";
 import { cn } from "@/lib/utils";
+import { PhoneLeads } from "./phone-leads";
 
-export const metadata: Metadata = { title: "Pipeline · Pitchproof" };
+export const metadata: Metadata = { title: "Leads · Pitchproof" };
 
 // Screen 4: Pipeline board. One column per stage, from found to replied,
 // plus Skipped with the reason.
@@ -29,11 +30,11 @@ export default function PipelinePage() {
   return (
     <>
       <PageHeader
-        title="Pipeline"
-        description="Every business the agent found, and where each pitch stands."
+        title="Leads"
+        description="Businesses the agent found, and where each pitch stands."
         actions={
           <Link href="/search" className={buttonVariants()}>
-            <Plus /> New search
+            <Plus /> <span className="hidden sm:inline">New search</span><span className="sm:hidden">Search</span>
           </Link>
         }
       />
@@ -45,10 +46,19 @@ export default function PipelinePage() {
 }
 
 async function Board() {
-  const { leads, sample, signedIn } = await getLeads();
+  const { leads, sample, signedIn, hasProfile } = await getLeads();
   const waiting = leads.filter((l) => l.stage === "needs_approval").length;
   return (
     <>
+      {signedIn && !hasProfile && (
+        <Link href="/onboarding" className="mb-4 flex items-center gap-3 rounded-xl bg-primary p-4 text-primary-foreground">
+          <span className="flex-1">
+            <span className="block font-medium">Finish setting up</span>
+            <span className="block text-sm text-primary-foreground/80">A few questions so the agent knows what you offer.</span>
+          </span>
+          <ChevronRight className="size-5" />
+        </Link>
+      )}
       {sample && <SampleNote signedIn={signedIn} />}
       {waiting > 0 && (
         <p className="mb-4 text-sm">
@@ -56,12 +66,15 @@ async function Board() {
           <span className="text-muted-foreground">Nothing is sent until you approve it.</span>
         </p>
       )}
-      <div className="pb-4 md:-mx-4 md:overflow-x-auto md:px-4">
-        <div className="flex flex-col gap-5 md:flex-row md:gap-3">
+      <div className="md:hidden">
+        <PhoneLeads leads={leads} columns={columns.map(({ stage, title }) => ({ stage, title }))} />
+      </div>
+      <div className="hidden pb-4 md:-mx-8 md:block md:overflow-x-auto md:px-8">
+        <div className="flex gap-3">
           {columns.map((col) => {
             const cards = leads.filter((l) => l.stage === col.stage);
             return (
-              <section key={col.stage} className="flex flex-col gap-2 md:w-60 md:shrink-0">
+              <section key={col.stage} className="flex w-60 shrink-0 flex-col gap-2">
                 <h2 className="flex items-center gap-2 px-1 text-sm font-medium">
                   <span className={cn("size-2 rounded-full", col.dot)} />
                   {col.title}
@@ -105,7 +118,7 @@ function Card({ card }: { card: LeadCard }) {
       )}
     </>
   );
-  const cls = "block rounded-md border bg-background p-3 shadow-xs";
+  const cls = "block rounded-lg border bg-background p-3 shadow-xs";
   return card.pitchId ? (
     <Link href={`/pitch/${card.pitchId}`} className={cn(cls, "transition-colors hover:border-primary/40")}>
       {body}

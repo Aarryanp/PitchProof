@@ -78,9 +78,10 @@ type AuditRow = { id: string; company_id: string; findings: Finding[]; passed_ga
 type PitchRow = { id: string; company_id: string; status: PitchStatus };
 type CompanyRow = { id: string; name: string; sector: string | null; city: string | null; website: string | null };
 
-export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; signedIn: boolean }> {
+export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; signedIn: boolean; hasProfile: boolean }> {
   const viewer = await getViewer();
-  if (!viewer) return { leads: sampleLeads, sample: true, signedIn: false };
+  if (!viewer) return { leads: sampleLeads, sample: true, signedIn: false, hasProfile: false };
+  const hasProfile = Boolean(viewer.student);
 
   const supabase = await createClient();
   const [{ data: companies }, { data: audits }, { data: pitches }] = await Promise.all([
@@ -90,7 +91,7 @@ export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; 
   ]);
 
   const rows = (companies as CompanyRow[]) ?? [];
-  if (rows.length === 0) return { leads: sampleLeads, sample: true, signedIn: true };
+  if (rows.length === 0) return { leads: sampleLeads, sample: true, signedIn: true, hasProfile };
 
   const leads = rows.map((c): LeadCard => {
     const audit = (audits as AuditRow[] | null)?.find((a) => a.company_id === c.id);
@@ -112,7 +113,7 @@ export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; 
       skipReason: audit?.skip_reason ?? (pitch?.status === "declined" ? "Said no" : null),
     };
   });
-  return { leads, sample: false, signedIn: true };
+  return { leads, sample: false, signedIn: true, hasProfile };
 }
 
 export async function getPitch(id: string): Promise<{ pitch: PitchDetail | null; sample: boolean }> {

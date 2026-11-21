@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-// The pipeline board is the home screen.
+// The proxy (proxy.ts) sends visitors to /welcome or /pipeline before this
+// runs; this is only a fallback.
 export default function Home() {
-  redirect("/pipeline");
+  redirect("/welcome");
 }

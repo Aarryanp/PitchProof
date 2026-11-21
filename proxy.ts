@@ -35,7 +35,15 @@ export async function proxy(request: NextRequest) {
   );
 
   // Refreshes the session if it has expired.
-  await supabase.auth.getUser();
+  const { data } = await supabase.auth.getUser();
+
+  // The home address opens the app for a signed-in student and the welcome
+  // screen for everyone else.
+  if (request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = data.user ? "/pipeline" : "/welcome";
+    return NextResponse.redirect(url);
+  }
   return response;
 }
 

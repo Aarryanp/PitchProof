@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
+import { Settings } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { getProfile } from "@/lib/data";
 import { Loading } from "@/components/loading";
 import { PageHeader } from "@/components/page-header";
@@ -15,6 +18,11 @@ export default function ProfilePage() {
       <PageHeader
         title="Profile"
         description="Companies see your name, photo, one line about you and 2–3 of these projects."
+        actions={
+          <Link href="/settings" className={buttonVariants({ variant: "outline" }) + " md:hidden"}>
+            <Settings /> Settings
+          </Link>
+        }
       />
       <Suspense fallback={<Loading />}>
         <ProfileLoader />

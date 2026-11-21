@@ -54,7 +54,7 @@ export function SignInForm() {
 
   return (
     <>
-    <Button type="button" variant="outline" className="mt-6 w-full" onClick={signInWithGoogle}>
+    <Button type="button" variant="outline" size="lg" className="mt-8 h-12 w-full rounded-xl" onClick={signInWithGoogle}>
       <GoogleIcon /> Continue with Google
     </Button>
     <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
@@ -72,7 +72,7 @@ export function SignInForm() {
         onChange={(e) => setEmail(e.target.value)}
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" variant="outline" disabled={state === "sending"} className="mt-1">
+      <Button type="submit" variant="outline" size="lg" disabled={state === "sending"} className="mt-1 h-12 rounded-xl">
         {state === "sending" ? "Sending…" : "Email me a link"}
       </Button>
     </form>

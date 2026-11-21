@@ -19,6 +19,11 @@ For each part, write:
 - Files: `app/sign-in/`, `app/auth/` (email link landing and sign-out), `app/(app)/` (the student screens and their shared menu), `app/p/[slug]/` (company page), `components/` (buttons, cards and other building blocks), `lib/data.ts` (reads data for the screens), `lib/sample-data.ts` (the made-up businesses), `lib/pitch-rules.ts` (email checks), `lib/types.ts`, `proxy.ts` (keeps the student signed in).
 - How to test it: `npm run dev`, then open http://localhost:3000. Without signing in you see every screen with sample data. Open a card in "Needs approval" and type "leverage" into the email: the banned-phrase check turns red and Approve turns off. Open http://localhost:3000/p/sample on your phone size to see the company page. To sign in, use your email on /sign-in and click the link in your inbox.
 
+## App feel: welcome, onboarding, tour, install
+- What it does: makes the web app behave like a phone app. New visitors see a welcome screen where the logo draws itself and the three ideas of the app appear one by one. After the first sign-in, the student answers 7 short questions, one per screen (name, city, goal, skills, one line, projects, two sample messages); the answers fill the Profile. Then a 4-card tour explains Search, Leads, approving emails and Results. On phones the menu is a tab bar at the bottom (Leads, Search, Results, Me) and the Leads board shows one stage at a time; on computers the menu sits on the left. The app can be installed to the home screen (a "PWA") and then opens full screen.
+- Files: `app/welcome/`, `app/onboarding/`, `app/tour/`, `app/(app)/layout.tsx` and `components/app-nav.tsx` (the frame and menus), `app/(app)/pipeline/phone-leads.tsx`, `components/logo.tsx`, `components/install-app.tsx`, `app/manifest.ts`, `app/icon.svg`, `app/apple-icon.png`, `public/icon-*.png`, the animations at the end of `app/globals.css`, and `proxy.ts` (sends "/" to the welcome screen or the app).
+- How to test it: open the site in a private window: you land on the welcome screen. Sign in with a Google account that has no profile yet: you go through the questions, then the tour. On a phone in Chrome, Settings > "Install app" adds it to the home screen.
+
 ## Step 1: Find companies
 - What it does:
 - Files:
