@@ -5,6 +5,16 @@ import { NextResponse, type NextRequest } from "next/server";
 // so a student stays signed in. (In Next.js 16 this file is called proxy.ts;
 // older versions called it middleware.ts.)
 export async function proxy(request: NextRequest) {
+  // If Supabase sends the sign-in link to the wrong page (for example the
+  // home page, when this address isn't in its allowed list), pass the code
+  // on to the page that finishes signing in.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && request.nextUrl.pathname !== "/auth/callback") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
