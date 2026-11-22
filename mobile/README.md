@@ -6,6 +6,9 @@ The agent steps and the company pages (`/p/...`) stay on the Next.js server.
 
 ## Run it on your phone
 
+Written and tested with Flutter 3.38.0 (the version the GitHub build uses).
+
+
 1. Copy `env.example.json` to `env.json` and fill in the two values from
    `.env.local` in the main folder (`NEXT_PUBLIC_SUPABASE_URL` and
    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). `env.json` stays out of git.
