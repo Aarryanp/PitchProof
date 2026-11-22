@@ -1,9 +1,10 @@
 import { corsHeaders, json, studentFromRequest } from "@/lib/agent/auth";
 import { findForSearch } from "@/lib/agent/find";
+import { parseSkills } from "@/lib/skill-packs";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // POST /api/agent/search  (called by "Run the agent" in the phone app)
-// Body: { skill, sector, city, count }
+// Body: { skills: ["web", "seo"], sector, city, count }
 // Saves the search, picks businesses (step 1) and claims them.
 // Returns { searchId, leads: [{ id, name, website }], note }.
 // The app then calls /api/agent/company once per business.
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
   if (!studentId) return json({ error: "Sign in to run a search." }, 401);
 
   const body = await req.json().catch(() => ({}));
-  const skill = String(body.skill ?? "web");
+  const skills = parseSkills(body.skills ?? body.skill);
   const sector = String(body.sector ?? "").trim();
   const city = String(body.city ?? "").trim();
   const count = Math.min(Math.max(Number(body.count) || 10, 1), 20);
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   const { data: student } = await db.from("students").select("id").eq("id", studentId).maybeSingle();
   if (!student) return json({ error: "Save your profile first, so the agent knows what you offer." }, 400);
 
-  const { data: search, error } = await db.from("searches").insert({ student_id: studentId, skill_type: skill, sector, city, count }).select("id").single();
+  const { data: search, error } = await db.from("searches").insert({ student_id: studentId, skill_type: skills.join(","), sector, city, count }).select("id").single();
   if (error || !search) return json({ error: "Couldn't save the search." }, 500);
 
   try {

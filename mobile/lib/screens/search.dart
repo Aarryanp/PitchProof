@@ -17,7 +17,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  String skill = 'web';
+  final Set<String> skills = {'web'};
   String type = businessGroups.first.types.first;
   final _sector = TextEditingController();
   String get _sectorText => type == 'Other' ? _sector.text.trim() : type;
@@ -63,7 +63,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _leads = [];
     });
     try {
-      final r = await Agent.start(skill: skill, sector: _sectorText, city: _city.text, count: count.round());
+      final r = await Agent.start(skills: skills.toList(), sector: _sectorText, city: _city.text, count: count.round());
       if (!mounted) return;
       setState(() {
         ok = true;
@@ -76,7 +76,7 @@ class _SearchScreenState extends State<SearchScreen> {
       Future<void> worker() async {
         while (queue.isNotEmpty) {
           final lead = queue.removeAt(0);
-          await Agent.check(r.searchId, skill, lead);
+          await Agent.check(r.searchId, skills.toList(), lead);
           if (mounted) setState(() {});
         }
       }
@@ -147,20 +147,23 @@ class _SearchScreenState extends State<SearchScreen> {
             child: SoftCard(
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('What can you offer?', style: T.h3),
+                const SizedBox(height: 2),
+                Text('Pick one or more.', style: T.small),
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   for (final o in skillOptions)
                     Pressable(
-                      onTap: () => setState(() => skill = o.key),
+                      radius: BorderRadius.circular(999),
+                      onTap: () => setState(() => skills.contains(o.key) ? (skills.length > 1 ? skills.remove(o.key) : null) : skills.add(o.key)),
                       child: AnimatedContainer(
                         duration: M.fast,
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(color: skill == o.key ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
+                        decoration: BoxDecoration(color: skills.contains(o.key) ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(skillIcon(o.key), size: 18, color: skill == o.key ? Colors.white : C.fg),
+                          Icon(skillIcon(o.key), size: 18, color: skills.contains(o.key) ? Colors.white : C.fg),
                           const SizedBox(width: 6),
-                          Text(o.name, style: TextStyle(fontWeight: FontWeight.w700, color: skill == o.key ? Colors.white : C.fg)),
+                          Text(o.name, style: TextStyle(fontWeight: FontWeight.w700, color: skills.contains(o.key) ? Colors.white : C.fg)),
                         ]),
                       ),
                     ),
@@ -170,6 +173,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 const SizedBox(height: 8),
                 Pressable(
                   scale: 0.98,
+                  radius: BorderRadius.circular(16),
                   onTap: _pickType,
                   child: Container(
                     height: 54,
@@ -282,6 +286,7 @@ class _TypePickerState extends State<_TypePicker> {
 
   Widget _row(String t) => Pressable(
         scale: 0.98,
+        radius: BorderRadius.circular(14),
         onTap: () => Navigator.of(context).pop(t),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

@@ -3,6 +3,7 @@
 // When there is nothing real yet, screens get sample data (marked sample).
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,12 @@ bool hasBackend = false;
 /// The signed-in user's id, or null.
 String? get userId => hasBackend ? _db.auth.currentUser?.id : null;
 String? get userEmail => hasBackend ? _db.auth.currentUser?.email : null;
+
+/// The picture from the Google account you signed in with, if any.
+String? get googlePhoto {
+  final m = hasBackend ? _db.auth.currentUser?.userMetadata : null;
+  return (m?['avatar_url'] ?? m?['picture']) as String?;
+}
 
 typedef Rows = List<Map<String, dynamic>>;
 
@@ -255,6 +262,38 @@ class Repo {
     if (rows.isNotEmpty) await _db.from('portfolio_items').insert(rows.toList());
   }
 
+  /// Uploads a new profile photo to `avatars/<user id>/` and saves its link.
+  /// The file name changes each time so phones don't show an old copy.
+  static Future<String> uploadPhoto(Uint8List bytes, String ext) async {
+    final id = userId;
+    if (id == null) throw Exception('Sign in first.');
+    final old = await _db.storage.from('avatars').list(path: id);
+    final path = '$id/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    await _db.storage.from('avatars').uploadBinary(path, bytes, fileOptions: FileOptions(contentType: 'image/${ext == 'jpg' ? 'jpeg' : ext}'));
+    if (old.isNotEmpty) await _db.storage.from('avatars').remove([for (final f in old) '$id/${f.name}']);
+    final url = _db.storage.from('avatars').getPublicUrl(path);
+    await _db.from('students').update({'photo_url': url}).eq('id', id);
+    return url;
+  }
+
+  /// Removes the uploaded photo. Your Google picture shows again, if you have one.
+  static Future<void> removePhoto() async {
+    final id = userId;
+    if (id == null) return;
+    final old = await _db.storage.from('avatars').list(path: id);
+    if (old.isNotEmpty) await _db.storage.from('avatars').remove([for (final f in old) '$id/${f.name}']);
+    await _db.from('students').update({'photo_url': null}).eq('id', id);
+  }
+
+  /// Deletes the account and everything in it: profile, projects, searches,
+  /// leads, emails and photos. Companies you found are freed for others.
+  /// Cannot be undone.
+  static Future<void> deleteAccount() async {
+    if (userId == null) return;
+    await _db.rpc('delete_my_account');
+    await Cache.clear();
+    await _db.auth.signOut();
+  }
 }
 
 /// The Next.js server's address, from the build command
@@ -299,9 +338,9 @@ class Agent {
   }
 
   /// Step 1: saves the search and picks businesses for it.
-  static Future<({String searchId, List<AgentLead> leads, String note})> start({required String skill, required String sector, required String city, required int count}) async {
+  static Future<({String searchId, List<AgentLead> leads, String note})> start({required List<String> skills, required String sector, required String city, required int count}) async {
     if (userId == null) throw Exception('Sign in to run a search.');
-    final r = await _post('/api/agent/search', {'skill': skill, 'sector': sector.trim(), 'city': city.trim(), 'count': count});
+    final r = await _post('/api/agent/search', {'skills': skills, 'sector': sector.trim(), 'city': city.trim(), 'count': count});
     final leads = [
       for (final l in (r['leads'] as List? ?? const []))
         AgentLead(id: '${l['id']}', name: '${l['name']}', website: l['website'] as String?),
@@ -310,9 +349,9 @@ class Agent {
   }
 
   /// Steps 2–8 for one business: check the site, quality gate, draft email.
-  static Future<void> check(String searchId, String skill, AgentLead lead) async {
+  static Future<void> check(String searchId, List<String> skills, AgentLead lead) async {
     try {
-      final r = await _post('/api/agent/company', {'searchId': searchId, 'companyId': lead.id, 'skill': skill});
+      final r = await _post('/api/agent/company', {'searchId': searchId, 'companyId': lead.id, 'skills': skills});
       lead.stage = '${r['stage']}';
       lead.note = r['note'] as String?;
       lead.topProblem = r['topProblem'] as String?;

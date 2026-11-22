@@ -37,6 +37,8 @@ class Btn extends StatelessWidget {
       ],
     );
     return Pressable(
+      radius: BorderRadius.circular(999),
+      rippleColor: kind == BtnKind.primary || kind == BtnKind.dark ? const Color(0x33FFFFFF) : const Color(0x1F1B1D2A),
       onTap: busy ? null : onTap,
       child: AnimatedContainer(
         duration: M.fast,
@@ -60,7 +62,7 @@ class SoftCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final box = Container(width: double.infinity, padding: padding, decoration: cardBox(color: color), child: child);
-    return onTap == null ? box : Pressable(onTap: onTap, scale: 0.98, child: box);
+    return onTap == null ? box : Pressable(onTap: onTap, scale: 0.98, radius: BorderRadius.circular(S.radius), rippleColor: color == C.card ? const Color(0x1F1B1D2A) : const Color(0x33FFFFFF), child: box);
   }
 }
 
@@ -142,6 +144,7 @@ class BackBtn extends StatelessWidget {
   final String? label;
   @override
   Widget build(BuildContext context) => Pressable(
+        radius: BorderRadius.circular(999),
         onTap: () => Navigator.of(context).maybePop(),
         child: Container(
           height: 40,
@@ -178,5 +181,26 @@ IconData skillIcon(String key) => switch (key) {
       'design' => Icons.palette_outlined,
       'seo' => Icons.trending_up_rounded,
       'chatbot' => Icons.smart_toy_outlined,
+      'content' => Icons.edit_note_rounded,
+      'social' => Icons.campaign_outlined,
+      'video' => Icons.movie_outlined,
+      'app' => Icons.phone_iphone_rounded,
       _ => Icons.code_rounded,
     };
+
+/// Your photo in a circle. Falls back to the coloured letter if there is no
+/// photo or it fails to load.
+class ProfilePhoto extends StatelessWidget {
+  const ProfilePhoto({super.key, required this.url, required this.name, this.size = 44});
+  final String? url;
+  final String name;
+  final double size;
+  @override
+  Widget build(BuildContext context) {
+    final letter = Avatar(name, size: size);
+    if (url == null || url!.isEmpty) return letter;
+    return ClipOval(
+      child: Image.network(url!, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, _, _) => letter, loadingBuilder: (_, child, p) => p == null ? child : letter),
+    );
+  }
+}

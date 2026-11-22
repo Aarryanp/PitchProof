@@ -5,7 +5,7 @@ import { askJson, hasGemini } from "@/lib/gemini";
 import { readPage } from "@/lib/olostep";
 import { measure } from "@/lib/pagespeed";
 import { emailsIn, siteFacts } from "@/lib/skill-packs/facts";
-import { packFor } from "@/lib/skill-packs";
+import { findingsFor, offerFor, packsFor } from "@/lib/skill-packs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Finding, Student } from "@/lib/types";
 
@@ -22,7 +22,7 @@ export type ProcessResult = {
   note: string;
 };
 
-export async function processCompany(opts: { studentId: string; searchId: string | null; companyId: string; skill: string }): Promise<ProcessResult> {
+export async function processCompany(opts: { studentId: string; searchId: string | null; companyId: string; skills: string[] }): Promise<ProcessResult> {
   const db = createAdminClient();
   const { studentId, companyId } = opts;
 
@@ -48,7 +48,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
   // Steps 2–3: read and measure. Both look in the cache first.
   if (!company.website) {
     const findings: Finding[] = [{ problem: "No website", evidence: "No website is listed for this business", source: "Crustdata", hard: true }];
-    const { data: audit } = await db.from("audits").insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skill, findings, passed_gate: true }).select("id").single();
+    const { data: audit } = await db.from("audits").insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skills.join(","), findings, passed_gate: true }).select("id").single();
     return await draft(audit!.id, findings);
   }
   const [page, speed] = await Promise.all([readPage(company.website), measure(company.website)]);
@@ -61,8 +61,8 @@ export async function processCompany(opts: { studentId: string; searchId: string
   await db.from("companies").update({ website_status: facts.parked ? "parked" : facts.opens === false ? "dead" : "live" }).eq("id", companyId);
 
   // Step 4: problems for this skill + the quality gate.
-  const pack = packFor(opts.skill);
-  const findings = pack.findings(facts);
+  const packs = packsFor(opts.skills);
+  const findings = findingsFor(packs, facts);
   let gate = qualityGate(findings, { checked });
 
   // Clean-up: Crustdata labels some traders and clubs as clinics. Gemini reads
@@ -87,7 +87,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
 
   const { data: audit } = await db
     .from("audits")
-    .insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skill, findings, passed_gate: gate.passed, skip_reason: gate.passed ? null : gate.reason })
+    .insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skills.join(","), findings, passed_gate: gate.passed, skip_reason: gate.passed ? null : gate.reason })
     .select("id")
     .single();
   if (!gate.passed) return result("skipped", gate.reason, findings[0] ?? null);
@@ -121,7 +121,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
 
     const slug = `${co.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}-${Math.random().toString(36).slice(2, 7)}`;
     const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://pitch-proof.vercel.app").replace(/\/$/, "");
-    const mail = await draftEmail({ student, company: co, contactName: contact.name, findings: list, offer: packFor(opts.skill).offer, pageUrl: `${site}/p/${slug}` });
+    const mail = await draftEmail({ student, company: co, contactName: contact.name, findings: list, offer: offerFor(packsFor(opts.skills)), pageUrl: `${site}/p/${slug}` });
     await db.from("pitches").insert({
       audit_id: auditId,
       student_id: studentId,

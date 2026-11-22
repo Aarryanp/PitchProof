@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
@@ -11,6 +12,7 @@ import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
 import 'onboarding.dart';
+import 'settings.dart';
 import 'sign_in.dart';
 import 'tour.dart';
 import 'welcome.dart';
@@ -30,6 +32,73 @@ class _MeScreenState extends State<MeScreen> {
   void _reload() => setState(() {
         _data = Repo.profile();
       });
+
+  String? _photo;
+  bool _uploading = false;
+
+  /// Choose, take or remove your profile photo.
+  Future<void> _photoSheet(Student s) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: C.card,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: Text('Profile photo', style: T.h2)),
+            _SheetRow(icon: Icons.photo_library_outlined, label: 'Choose from photos', onTap: () => Navigator.pop(context, 'gallery')),
+            _SheetRow(icon: Icons.photo_camera_outlined, label: 'Take a photo', onTap: () => Navigator.pop(context, 'camera')),
+            if ((_photo ?? s.photoUrl) != null) _SheetRow(icon: Icons.delete_outline_rounded, label: 'Remove photo', danger: true, onTap: () => Navigator.pop(context, 'remove')),
+          ]),
+        ),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      if (choice == 'remove') {
+        await Repo.removePhoto();
+        _photo = null;
+        s.photoUrl = null;
+      } else {
+        final f = await ImagePicker().pickImage(source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+        if (f != null) {
+          final ext = f.name.split('.').last.toLowerCase();
+          _photo = await Repo.uploadPhoto(await f.readAsBytes(), const {'png', 'webp', 'heic'}.contains(ext) ? ext : 'jpg');
+        }
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not change the photo: ${'$e'.replaceFirst('Exception: ', '')}')));
+    }
+    if (mounted) setState(() => _uploading = false);
+  }
+
+  /// Asks twice-over, then deletes the account and everything in it.
+  Future<void> _deleteAccount() async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: C.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(S.radius)),
+        title: Text('Delete your account?', style: T.h2),
+        content: Text('This removes your profile, projects, searches, leads, drafts, emails and photo for good. It cannot be undone.', style: T.body),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel', style: TextStyle(color: C.fg, fontWeight: FontWeight.w700))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: C.danger, fontWeight: FontWeight.w800))),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
+    try {
+      await Repo.deleteAccount();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(fadeRoute(const WelcomeScreen()), (_) => false);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not delete the account: ${'$e'.replaceFirst('Exception: ', '')}')));
+    }
+  }
 
   Future<void> _signOut() async {
     await Cache.clear();
@@ -93,7 +162,26 @@ class _MeScreenState extends State<MeScreen> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: C.bg, shape: BoxShape.circle, boxShadow: cardShadow),
-              child: Avatar(s.name.isEmpty ? (userEmail ?? '?') : s.name, size: avatar),
+              child: Pressable(
+                radius: BorderRadius.circular(999),
+                onTap: userId == null ? null : () => _photoSheet(s),
+                child: Stack(clipBehavior: Clip.none, children: [
+                  ProfilePhoto(url: _photo ?? s.photoUrl ?? googlePhoto, name: s.name.isEmpty ? (userEmail ?? '?') : s.name, size: avatar),
+                  if (userId != null)
+                    Positioned(
+                      right: 0,
+                      bottom: 2,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(color: C.ink, shape: BoxShape.circle, border: Border.all(color: C.bg, width: 3)),
+                        child: _uploading
+                            ? const Padding(padding: EdgeInsets.all(6), child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.photo_camera_rounded, size: 14, color: Colors.white),
+                      ),
+                    ),
+                ]),
+              ),
             ),
           ),
         ]),
@@ -166,16 +254,30 @@ class _MeScreenState extends State<MeScreen> {
             const Divider(height: 1, indent: 56, color: C.line),
             _Row(icon: Icons.speed_rounded, label: 'Daily limit', trailing: Text('${s.dailyLimit} a day', style: T.small.copyWith(fontWeight: FontWeight.w700))),
             const Divider(height: 1, indent: 56, color: C.line),
+            _Row(icon: Icons.notifications_none_rounded, label: 'Notifications', onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const NotificationSettingsScreen()))),
+            const Divider(height: 1, indent: 56, color: C.line),
             _Row(icon: Icons.play_circle_outline_rounded, label: 'Replay the tour', onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const TourScreen(replay: true)))),
+            const Divider(height: 1, indent: 56, color: C.line),
+            _Row(icon: Icons.shield_outlined, label: 'Privacy policy', onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const PrivacyPolicyScreen()))),
             if (signedIn) ...[
               const Divider(height: 1, indent: 56, color: C.line),
-              _Row(icon: Icons.logout_rounded, label: 'Sign out', danger: true, onTap: _signOut),
+              _Row(icon: Icons.logout_rounded, label: 'Sign out', onTap: _signOut),
             ],
           ]),
         ),
       ),
       const SizedBox(height: 12),
       Text('At most 15 new pitches a day and 2 follow-ups per business. Follow-ups stop on any reply.', style: T.small.copyWith(fontSize: 12)),
+      if (signedIn) ...[
+        const SizedBox(height: 22),
+        Settle(
+          index: 5,
+          child: Container(
+            decoration: cardBox(),
+            child: _Row(icon: Icons.delete_forever_outlined, label: 'Delete account', danger: true, onTap: _deleteAccount),
+          ),
+        ),
+      ],
     ];
   }
 }
@@ -198,6 +300,28 @@ class _Row extends StatelessWidget {
         trailing ?? const Icon(Icons.chevron_right_rounded, color: C.muted),
       ]),
     );
-    return onTap == null ? row : Pressable(onTap: onTap, scale: 0.98, child: row);
+    return onTap == null ? row : Pressable(onTap: onTap, scale: 0.98, radius: BorderRadius.zero, child: row);
   }
+}
+
+class _SheetRow extends StatelessWidget {
+  const _SheetRow({required this.icon, required this.label, required this.onTap, this.danger = false});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+  @override
+  Widget build(BuildContext context) => Pressable(
+        scale: 0.98,
+        radius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+          child: Row(children: [
+            Icon(icon, size: 22, color: danger ? C.danger : C.fg),
+            const SizedBox(width: 16),
+            Text(label, style: T.h3.copyWith(color: danger ? C.danger : C.fg)),
+          ]),
+        ),
+      );
 }

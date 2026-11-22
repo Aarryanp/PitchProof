@@ -41,6 +41,8 @@ class LeadsScreenState extends State<LeadsScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 78),
         child: Pressable(
+          radius: BorderRadius.circular(999),
+          rippleColor: const Color(0x33FFFFFF),
           onTap: () => HomeScreen.of(context).go(1),
           child: Container(
             width: 58,
@@ -134,6 +136,7 @@ class LeadsScreenState extends State<LeadsScreen> {
           index: i,
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Pressable(
+              radius: BorderRadius.circular(18),
               onTap: () => setState(() => _showSkipped = !_showSkipped),
               scale: 0.98,
               child: Container(

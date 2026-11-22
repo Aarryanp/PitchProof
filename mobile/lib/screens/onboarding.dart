@@ -163,6 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   opacity: step == 0 && !widget.editing ? 0 : 1,
                   duration: M.fast,
                   child: Pressable(
+                    radius: BorderRadius.circular(999),
                     onTap: step == 0 && !widget.editing ? null : _back,
                     child: Container(
                       width: 40,
@@ -259,6 +260,7 @@ class _Choice extends StatelessWidget {
   Widget build(BuildContext context) => Pressable(
         onTap: onTap,
         scale: 0.98,
+        radius: BorderRadius.circular(S.radius),
         child: AnimatedContainer(
           duration: M.fast,
           padding: const EdgeInsets.all(16),
@@ -310,6 +312,7 @@ class _ProjectCard extends StatelessWidget {
           Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
             for (final t in skillOptions.map((o) => o.key)) ...[
               Pressable(
+                radius: BorderRadius.circular(999),
                 onTap: () {
                   p.skillTag = t;
                   onChanged();
@@ -318,7 +321,7 @@ class _ProjectCard extends StatelessWidget {
                   duration: M.fast,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(color: p.skillTag == t ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
-                  child: Text(const {'web': 'Web', 'design': 'Design', 'seo': 'SEO', 'chatbot': 'Chatbot'}[t]!, style: TextStyle(color: p.skillTag == t ? Colors.white : C.fg, fontWeight: FontWeight.w700, fontSize: 13)),
+                  child: Text(const {'web': 'Web', 'design': 'Design', 'seo': 'SEO', 'chatbot': 'Chatbot', 'content': 'Writing', 'social': 'Social', 'video': 'Video', 'app': 'App'}[t] ?? t, style: TextStyle(color: p.skillTag == t ? Colors.white : C.fg, fontWeight: FontWeight.w700, fontSize: 13)),
                 ),
               ),
             ],

@@ -206,3 +206,34 @@ create table public.fetch_cache (
   fetched_at timestamptz not null default now()
 );
 alter table public.fetch_cache enable row level security;
+
+-- Delete account (22 Nov): a signed-in student deletes their own account.
+-- Deleting the auth user cascades to students and every row that belongs
+-- to them; their profile photos are removed too.
+create or replace function public.delete_my_account()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from storage.objects where bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text;
+  delete from auth.users where id = (select auth.uid());
+$$;
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
+
+-- Profile photos (22 Nov): public to read (they show on company pages), and
+-- each student can only write inside their own folder (avatars/<user id>/...).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/heic'])
+on conflict (id) do nothing;
+
+drop policy if exists "avatars_insert_own" on storage.objects;
+create policy "avatars_insert_own" on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists "avatars_update_own" on storage.objects;
+create policy "avatars_update_own" on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+drop policy if exists "avatars_delete_own" on storage.objects;
+create policy "avatars_delete_own" on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);

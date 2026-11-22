@@ -1,8 +1,9 @@
 import { corsHeaders, json, studentFromRequest } from "@/lib/agent/auth";
 import { processCompany } from "@/lib/agent/process";
+import { parseSkills } from "@/lib/skill-packs";
 
 // POST /api/agent/company
-// Body: { searchId, companyId, skill }
+// Body: { searchId, companyId, skills }
 // Runs steps 2–8 for one business: read and measure the site, quality gate,
 // find an email, draft the pitch. Returns what happened, for the Search screen.
 
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (!body.companyId) return json({ error: "Which business?" }, 400);
   try {
-    const result = await processCompany({ studentId, searchId: body.searchId ?? null, companyId: String(body.companyId), skill: String(body.skill ?? "web") });
+    const result = await processCompany({ studentId, searchId: body.searchId ?? null, companyId: String(body.companyId), skills: parseSkills(body.skills ?? body.skill) });
     return json(result);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : "Checking this business failed." }, 500);
