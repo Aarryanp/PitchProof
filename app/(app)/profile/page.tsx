@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { Settings } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getProfile } from "@/lib/data";
 import { Loading } from "@/components/loading";
+import { Reveal, Screen } from "@/components/screen";
 import { PageHeader } from "@/components/page-header";
 import { SampleNote } from "@/components/sample-note";
 import { ProfileForm } from "./profile-form";
@@ -14,20 +14,20 @@ export const metadata: Metadata = { title: "Profile · Pitchproof" };
 // Screen 2: Profile. Who the student is, their past work, and how they write.
 export default function ProfilePage() {
   return (
-    <>
+    <Screen>
       <PageHeader
         title="Profile"
         description="Companies see your name, photo, one line about you and 2–3 of these projects."
         actions={
-          <Link href="/settings" className={buttonVariants({ variant: "outline" }) + " md:hidden"}>
+          <Link href="/settings" transitionTypes={["nav-forward"]} className={buttonVariants({ variant: "secondary", size: "sm" }) + " md:hidden"}>
             <Settings /> Settings
           </Link>
         }
       />
-      <Suspense fallback={<Loading />}>
+      <Reveal fallback={<Loading rows={3} />}>
         <ProfileLoader />
-      </Suspense>
-    </>
+      </Reveal>
+    </Screen>
   );
 }
 

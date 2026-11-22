@@ -20,23 +20,34 @@ function isActive(pathname: string, match: string[]) {
 
 export function BottomTabs() {
   const pathname = usePathname();
+  const activeIndex = tabs.findIndex((t) => isActive(pathname, t.match));
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <div className="grid grid-cols-4">
+    <nav style={{ viewTransitionName: "tabbar" }} className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+10px)] z-40 md:hidden">
+      <div className="relative grid grid-cols-4 rounded-[26px] bg-card/95 p-1.5 shadow-[0_10px_30px_-12px_rgb(40_50_110/0.35)] backdrop-blur">
+        {/* The soft blue pill slides under whichever tab is open. */}
+        <span
+          aria-hidden
+          className="absolute top-1.5 bottom-1.5 left-1.5 rounded-[20px] bg-[#e7ecff] transition-[translate,opacity] duration-[380ms] ease-[cubic-bezier(0.3,1.3,0.5,1)]"
+          style={{
+            width: "calc((100% - 12px) / 4)",
+            translate: `${Math.max(activeIndex, 0) * 100}% 0`,
+            opacity: activeIndex < 0 ? 0 : 1,
+          }}
+        />
         {tabs.map(({ href, label, icon: Icon, match }) => {
           const active = isActive(pathname, match);
           return (
             <Link
               key={href}
               href={href}
+              transitionTypes={["tab"]}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-medium text-muted-foreground",
+                "press relative flex flex-col items-center gap-0.5 rounded-[20px] py-1.5 text-[11px] font-semibold text-muted-foreground",
                 active && "text-primary",
               )}
             >
-              <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-primary/10")}>
-                <Icon className="size-5" strokeWidth={active ? 2.25 : 1.75} />
-              </span>
+              <Icon className={cn("size-[22px] transition-transform duration-300", active && "-translate-y-px")} strokeWidth={active ? 2.3 : 1.8} />
               {label}
             </Link>
           );
@@ -64,9 +75,10 @@ export function SideNav() {
           <Link
             key={href}
             href={href}
+            transitionTypes={["tab"]}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-              active && "bg-primary/10 font-medium text-primary hover:bg-primary/10 hover:text-primary",
+              "press flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+              active && "bg-[#e7ecff] font-semibold text-primary hover:bg-[#e7ecff] hover:text-primary",
             )}
           >
             <Icon className="size-4" />

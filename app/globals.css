@@ -4,37 +4,40 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Colours for the whole app (shadcn/ui tokens).
-   One accent colour: deep blue (see docs/09-design-guide.md).
+   Look: "Soft cards" (chosen 22 Nov): a soft blue-grey background, white
+   rounded cards that float on it, one indigo-blue accent, friendly colours.
    Light mode only for now. */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.45 0.16 260);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.45 0.16 260);
-  /* Pipeline status colours */
-  --status-replied: oklch(0.6 0.15 150);
-  --status-waiting: oklch(0.75 0.15 75);
-  --status-skipped: oklch(0.7 0 0);
+  --radius: 1.25rem;
+  --background: #f4f5fb;
+  --foreground: #1b1d2a;
+  --card: #ffffff;
+  --card-foreground: #1b1d2a;
+  --popover: #ffffff;
+  --popover-foreground: #1b1d2a;
+  --primary: #3b5bdb;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f8;
+  --secondary-foreground: #1b1d2a;
+  --muted: #eceef6;
+  --muted-foreground: #6d7186;
+  --accent: #eef1fb;
+  --accent-foreground: #1b1d2a;
+  --destructive: #e03131;
+  --border: #e3e6f0;
+  --input: #dfe2ee;
+  --ring: #3b5bdb;
+  /* Pipeline status colours: green = replied, amber = waiting, grey = skipped */
+  --status-replied: #2f9e44;
+  --status-waiting: #f08c00;
+  --status-skipped: #adb5bd;
+  /* Soft shadow that makes white cards float */
+  --shadow-card: 0 1px 2px rgb(40 50 110 / 0.04), 0 8px 24px -12px rgb(40 50 110 / 0.18);
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-jakarta);
+  --shadow-card: var(--shadow-card);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -97,3 +100,93 @@
   .pp-rise, .pp-pop { animation: none; opacity: 1; }
   .pp-draw { animation: none; stroke-dashoffset: 0; }
 }
+
+
+/* ---------- Touch feel ----------
+   Everything you can tap shrinks a little while pressed and springs back,
+   like a native app. No grey flash on tap in mobile browsers. */
+html { -webkit-tap-highlight-color: transparent; }
+.press { transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 160ms, box-shadow 160ms, color 160ms; }
+.press:active { transform: scale(0.96); }
+.press-soft:active { transform: scale(0.985); }
+
+/* Cards and list items settle in one after another (set --i on each). */
+@keyframes pp-settle {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+.settle { animation: pp-settle 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+
+/* Shimmer placeholders while a screen loads. */
+@keyframes pp-shimmer { to { background-position: -200% 0; } }
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #e9ebf4 0%, #f5f6fb 50%, #e9ebf4 100%);
+  background-size: 200% 100%;
+  animation: pp-shimmer 1.3s linear infinite;
+}
+
+/* ---------- Screen changes (React <ViewTransition>) ----------
+   Tabs: the new screen fades up gently. Opening a lead slides in from the
+   right; going back slides in from the left. Loading placeholders fade out
+   quickly, then the real content rises in. */
+@keyframes vt-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vt-rise { from { transform: translateY(12px); } to { transform: none; } }
+@keyframes vt-slide { from { translate: var(--vt-offset); } to { translate: 0; } }
+::view-transition-old(.tab) { animation: 120ms ease-in both vt-fade reverse; }
+::view-transition-new(.tab) { animation: 220ms ease-out 80ms both vt-fade, 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-rise; }
+::view-transition-old(.nav-forward) { --vt-offset: -40px; animation: 140ms ease-in both vt-fade reverse, 320ms ease-in-out both vt-slide reverse; }
+::view-transition-new(.nav-forward) { --vt-offset: 48px; animation: 220ms ease-out 100ms both vt-fade, 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-slide; }
+::view-transition-old(.nav-back) { --vt-offset: 40px; animation: 140ms ease-in both vt-fade reverse, 320ms ease-in-out both vt-slide reverse; }
+::view-transition-new(.nav-back) { --vt-offset: -48px; animation: 220ms ease-out 100ms both vt-fade, 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-slide; }
+::view-transition-old(.skeleton-out) { animation: 120ms ease-out both vt-fade reverse; }
+::view-transition-new(.content-in) { animation: 200ms ease-out 60ms both vt-fade, 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both vt-rise; }
+
+/* ---------- Splash (shown once each time the app is opened) ---------- */
+@keyframes pp-splash-logo {
+  0% { opacity: 0; transform: scale(0.7); }
+  55% { opacity: 1; transform: scale(1.06); }
+  75% { transform: scale(0.98); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pp-splash-out { to { opacity: 0; visibility: hidden; } }
+.splash { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: var(--primary); animation: pp-splash-out 320ms ease-in 1050ms both; pointer-events: none; }
+.splash svg { animation: pp-splash-logo 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+html.pp-splash-seen .splash { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active, .press-soft:active { transform: none; }
+  .settle { animation: none; }
+  .splash { display: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* The top bar, side menu and tab bar stay still while screens change. */
+::view-transition-group(topbar),
+::view-transition-group(tabbar),
+::view-transition-group(sidenav) { animation: none; z-index: 50; }
+
+/* Bottom sheet (used after Approve). */
+@keyframes pp-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes pp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.pp-sheet { animation: pp-sheet-in 420ms cubic-bezier(0.2, 0.9, 0.25, 1) both; }
+.pp-sheet-out { animation: pp-sheet-in 260ms cubic-bezier(0.5, 0, 0.75, 0) reverse both; }
+.pp-scrim { animation: pp-fade-in 300ms ease-out both; }
+.pp-scrim-out { animation: pp-fade-in 260ms ease-in reverse both; }
+@media (prefers-reduced-motion: reduce) { .pp-sheet, .pp-sheet-out, .pp-scrim, .pp-scrim-out { animation: none; } }
+
+/* Bars grow from the left when Results opens. */
+@keyframes pp-grow { from { transform: scaleX(0); } to { transform: none; } }
+.pp-grow { animation: pp-grow 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 250ms both; }
+@media (prefers-reduced-motion: reduce) { .pp-grow { animation: none; } }
+
+/* Onboarding and tour steps slide like pages in a native app. */
+@keyframes pp-step { from { opacity: 0; translate: var(--from, 32px) 0; } to { opacity: 1; translate: 0 0; } }
+.pp-step-fwd { --from: 36px; animation: pp-step 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.pp-step-back { --from: -36px; animation: pp-step 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .pp-step-fwd, .pp-step-back { animation: none; } }
+
+/* The splash always stays on top, even while a screen change is animating. */
+::view-transition-group(splash) { animation: none; z-index: 200; }
+::view-transition-old(splash) { display: none; }
+::view-transition-new(splash) { animation: none; }

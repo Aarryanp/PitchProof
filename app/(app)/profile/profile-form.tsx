@@ -79,13 +79,13 @@ export function ProfileForm({ student, portfolio, readOnly }: { student: Student
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {items.map((it, i) => (
-              <div key={it.key} className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_11rem]">
+              <div key={it.key} className="grid gap-3 rounded-2xl bg-muted p-3.5 sm:grid-cols-[1fr_11rem]">
                 <Input name="item_title" placeholder="Project name" defaultValue={it.title} aria-label="Project name" />
                 <select
                   name="item_skill"
                   defaultValue={it.skill_tag ?? "web"}
                   aria-label="Skill"
-                  className="h-9 rounded-md border bg-background px-2 text-sm"
+                  className="h-12 rounded-2xl border bg-card px-3 text-[15px]"
                 >
                   {SKILLS.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -110,7 +110,7 @@ export function ProfileForm({ student, portfolio, readOnly }: { student: Student
             {items.length < 6 && !readOnly && (
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 className="self-start"
                 onClick={() => setItems([...items, { key: Date.now(), title: "", skill_tag: "web", link: "", image_url: "", one_line: "" }])}
@@ -161,7 +161,7 @@ function Chip({ label, ...props }: React.ComponentProps<"input"> & { label: stri
   return (
     <label className="cursor-pointer">
       <input className="peer sr-only" {...props} />
-      <span className="inline-block rounded-full border px-3 py-1 text-sm text-muted-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50">
+      <span className="press inline-block rounded-full bg-card px-4 py-2 text-sm font-semibold text-muted-foreground shadow-card peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50">
         {label}
       </span>
     </label>

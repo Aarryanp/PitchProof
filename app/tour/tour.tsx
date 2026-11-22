@@ -33,20 +33,25 @@ const slides = [
 export function Tour() {
   const router = useRouter();
   const [i, setI] = useState(0);
+  const [dir, setDir] = useState<"fwd" | "back">("fwd");
+  const go = (j: number) => {
+    setDir(j < i ? "back" : "fwd");
+    setI(j);
+  };
   const last = i === slides.length - 1;
   const s = slides[i];
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <div className="flex h-12 items-center justify-end">
-        <Link href="/search" className="text-sm text-muted-foreground hover:text-foreground">
+        <Link href="/search" className="press rounded-full bg-card px-4 py-2 text-sm font-semibold text-muted-foreground shadow-card">
           Skip
         </Link>
       </div>
 
-      <div key={i} className="pp-rise flex flex-1 flex-col" style={{ animationDuration: "0.4s" }}>
-        <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-3xl bg-muted/70 p-6">{s.art}</div>
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">{s.title}</h1>
+      <div key={i} className={cn("flex flex-1 flex-col", dir === "fwd" ? "pp-step-fwd" : "pp-step-back")}>
+        <div className="mt-4 flex aspect-[4/3] items-center justify-center rounded-[28px] bg-[#e7ecff] p-6">{s.art}</div>
+        <h1 className="mt-8 text-[26px] font-extrabold leading-tight tracking-tight">{s.title}</h1>
         <p className="mt-3 text-muted-foreground">{s.text}</p>
       </div>
 
@@ -56,12 +61,12 @@ export function Tour() {
             <button
               key={j}
               aria-label={`Slide ${j + 1}`}
-              onClick={() => setI(j)}
-              className={cn("h-2 rounded-full bg-muted transition-all", j === i ? "w-6 bg-primary" : "w-2")}
+              onClick={() => go(j)}
+              className={cn("h-2 rounded-full bg-[#d5d9ea] transition-all duration-300", j === i ? "w-6 bg-primary" : "w-2")}
             />
           ))}
         </div>
-        <Button size="lg" className="h-12 rounded-xl px-6" onClick={() => (last ? router.push("/search") : setI(i + 1))}>
+        <Button size="lg" className="px-7" onClick={() => (last ? router.push("/search") : go(i + 1))}>
           {last ? "Start my first search" : "Next"}
           {!last && <ChevronRight />}
         </Button>
@@ -73,8 +78,8 @@ export function Tour() {
 // Small drawings of each screen, made with plain boxes (no images to load).
 function SearchArt() {
   return (
-    <div className="w-full max-w-60 rounded-2xl border bg-background p-4 shadow-sm">
-      <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+    <div className="w-full max-w-60 rounded-[22px] bg-card p-4 shadow-card">
+      <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-2 text-sm">
         <Search className="size-4 text-muted-foreground" /> Clinics in Nagpur
       </div>
       <div className="mt-3 flex flex-col gap-2">
@@ -97,7 +102,7 @@ function LeadsArt() {
         { n: "Eye hospital", p: "No WhatsApp or phone link", ok: true },
         { n: "Heart institute", p: "Site is fine, skipped", ok: false },
       ].map((c) => (
-        <div key={c.n} className={cn("rounded-xl border bg-background p-3 shadow-xs", !c.ok && "opacity-50")}>
+        <div key={c.n} className={cn("rounded-[18px] bg-card p-3 shadow-card", !c.ok && "opacity-50")}>
           <p className="text-sm font-medium">{c.n}</p>
           <p className="text-xs text-muted-foreground">{c.p}</p>
         </div>
@@ -108,7 +113,7 @@ function LeadsArt() {
 
 function EmailArt() {
   return (
-    <div className="w-full max-w-60 rounded-2xl border bg-background p-4 shadow-sm">
+    <div className="w-full max-w-60 rounded-[22px] bg-card p-4 shadow-card">
       <div className="flex flex-col gap-1.5">
         <div className="h-2 w-1/3 rounded bg-muted-foreground/25" />
         <div className="h-2 w-full rounded bg-muted-foreground/15" />
@@ -116,10 +121,10 @@ function EmailArt() {
         <div className="h-2 w-2/3 rounded bg-primary/30" />
       </div>
       <div className="mt-4 flex gap-2">
-        <span className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-primary py-1.5 text-xs font-medium text-primary-foreground">
+        <span className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary py-1.5 text-xs font-medium text-primary-foreground">
           <Check className="size-3.5" /> Approve
         </span>
-        <span className="flex items-center justify-center rounded-lg border px-2.5 py-1.5 text-xs">
+        <span className="flex items-center justify-center rounded-full bg-muted px-2.5 py-1.5 text-xs">
           <X className="size-3.5" />
         </span>
       </div>
@@ -129,7 +134,7 @@ function EmailArt() {
 
 function ResultsArt() {
   return (
-    <div className="flex w-full max-w-60 items-end justify-center gap-3 rounded-2xl border bg-background p-4 shadow-sm">
+    <div className="flex w-full max-w-60 items-end justify-center gap-3 rounded-[22px] bg-card p-4 shadow-card">
       {[
         { h: "h-24", l: "Sent", c: "bg-muted-foreground/25" },
         { h: "h-14", l: "Opened", c: "bg-status-waiting/70" },

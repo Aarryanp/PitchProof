@@ -35,7 +35,7 @@ export function InstallApp() {
     );
   if (event)
     return (
-      <Button variant="outline" onClick={() => event.prompt()}>
+      <Button variant="secondary" onClick={() => event.prompt()}>
         <Download /> Install app
       </Button>
     );

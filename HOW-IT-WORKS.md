@@ -68,3 +68,19 @@ For each part, write:
 - What it does:
 - Where it lives:
 - How to test it:
+
+## Look and feel: "Soft cards" (22 Nov)
+
+**What it does.** The whole app now uses the "Soft cards" look: a soft blue-grey background, white rounded cards that float, one blue accent, pill-shaped buttons and the Plus Jakarta Sans font. More importantly, it moves like a phone app:
+- **Splash:** when you open the app, the logo springs in on a blue screen, the check draws itself, then it fades away. Only once per visit.
+- **Press feel:** every button, card, chip and tab shrinks slightly while pressed and springs back.
+- **Tab bar:** floats at the bottom; a soft blue pill slides to the tab you pick.
+- **Screen changes:** tabs fade up gently; opening a lead slides in from the right; going back slides in from the left. The top bar and tab bar stay still.
+- **Loading:** shimmer placeholders shaped like the content, then the real content rises in.
+- **Lists:** cards settle in one after another. Switching stage chips replays it.
+- **Approve:** a sheet slides up, a green circle pops in and a check draws itself (a small buzz on Android phones).
+- Anyone who turns on "reduce motion" on their phone gets the same app without the movement.
+
+**Which files.** `app/globals.css` (colours and all the animations), `app/layout.tsx` (font, splash script), `components/splash.tsx`, `components/screen.tsx` (screen-change wrapper), `components/loading.tsx` (shimmer), `components/avatar.tsx`, `components/app-nav.tsx` (sliding tab bar), `app/(app)/pitch/[id]/approved-sheet.tsx`, plus small style changes on every screen. No new libraries: the screen changes use React's built-in `<ViewTransition>`.
+
+**How to test.** Open the app on your phone in a fresh tab: you should see the splash. Tap between tabs, open a lead and go back, then press "Approve and send" on a sample lead.

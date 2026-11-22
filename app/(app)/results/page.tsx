@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { getResults } from "@/lib/data";
 import { getSessionUser } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/loading";
+import { Reveal, Screen } from "@/components/screen";
 import { PageHeader } from "@/components/page-header";
 import { SampleNote } from "@/components/sample-note";
 import { ExportButton } from "./export-button";
@@ -14,9 +14,11 @@ export const metadata: Metadata = { title: "Results · Pitchproof" };
 // answered, and whether audit pitches beat generic ones.
 export default function ResultsPage() {
   return (
-    <Suspense fallback={<Loading />}>
-      <Results />
-    </Suspense>
+    <Screen>
+      <Reveal fallback={<Loading rows={2} />}>
+        <Results />
+      </Reveal>
+    </Screen>
   );
 }
 
@@ -47,17 +49,17 @@ async function Results() {
       {sample && <SampleNote signedIn={Boolean(user)}>These numbers are made up. Yours show here after your first emails go out.</SampleNote>}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="p-4">
-            <p className="text-sm text-muted-foreground">{s.label}</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{s.value}</p>
-            {s.note && <p className="mt-0.5 text-xs text-muted-foreground">{s.note}</p>}
+        {stats.map((s, i) => (
+          <Card key={s.label} className={i === 2 ? "settle bg-primary p-4 text-primary-foreground" : "settle p-4"} style={{ "--i": i } as React.CSSProperties}>
+            <p className={i === 2 ? "text-sm font-medium text-primary-foreground/80" : "text-sm font-medium text-muted-foreground"}>{s.label}</p>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums">{s.value}</p>
+            {s.note && <p className={i === 2 ? "mt-0.5 text-xs text-primary-foreground/80" : "mt-0.5 text-xs text-muted-foreground"}>{s.note}</p>}
           </Card>
         ))}
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6">
+        <Card className="settle" style={{ "--i": 4 } as React.CSSProperties}>
           <CardHeader>
             <CardTitle>Audit pitch vs generic pitch</CardTitle>
             <CardDescription>Reply rate for each kind of email, sent to similar businesses.</CardDescription>
@@ -68,14 +70,14 @@ async function Results() {
               return (
                 <div key={c.label}>
                   <div className="mb-1 flex justify-between text-sm">
-                    <span className="font-medium">{c.label}</span>
+                    <span className="font-bold">{c.label}</span>
                     <span className="tabular-nums text-muted-foreground">
                       {rate}% · {c.replied} of {c.sent}
                     </span>
                   </div>
-                  <div className="h-2.5 rounded-full bg-muted">
+                  <div className="h-3 rounded-full bg-muted">
                     <div
-                      className={c.label === "Audit pitch" ? "h-full rounded-full bg-primary" : "h-full rounded-full bg-muted-foreground/40"}
+                      className={(c.label === "Audit pitch" ? "bg-primary" : "bg-muted-foreground/40") + " pp-grow h-full origin-left rounded-full"}
                       style={{ width: `${(rate / best) * 100}%` }}
                     />
                   </div>
@@ -85,7 +87,7 @@ async function Results() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="settle" style={{ "--i": 5 } as React.CSSProperties}>
           <CardHeader>
             <CardTitle>Skills to learn next</CardTitle>
             <CardDescription>Problems the agent found that your skills don&apos;t cover yet.</CardDescription>

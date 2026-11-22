@@ -1,14 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// One font for the whole app: friendly, rounded and easy to read on phones.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -20,16 +16,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#f4f5fb",
   viewportFit: "cover",
 };
+
+const splashScript = `try{var d=document.documentElement;if(sessionStorage.getItem("pp-splash")){d.classList.add("pp-splash-seen")}else{sessionStorage.setItem("pp-splash","1");setTimeout(function(){d.classList.add("pp-splash-seen")},1500)}}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        {/* Show the splash only on the first screen of each visit. */}
+        <script dangerouslySetInnerHTML={{ __html: splashScript }} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );

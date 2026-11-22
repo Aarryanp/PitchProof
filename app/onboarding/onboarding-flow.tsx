@@ -25,6 +25,8 @@ const SKILLS = [
 export function OnboardingFlow({ student, portfolio }: { student: Student; portfolio: PortfolioItem[] }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // Which way the screens slide: forward from the right, back from the left.
+  const [dir, setDir] = useState<"fwd" | "back">("fwd");
   const [error, setError] = useState("");
   const [saving, startSaving] = useTransition();
 
@@ -108,14 +110,14 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
       body: (
         <div className="flex flex-col gap-3">
           {projects.map((p, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-xl border p-3">
+            <div key={i} className="flex flex-col gap-2 rounded-[22px] bg-card p-3.5 shadow-card">
               <div className="flex gap-2">
                 <Input value={p.title} onChange={(e) => update(i, { title: e.target.value })} placeholder="Project name" aria-label="Project name" />
                 <select
                   value={p.skill_tag}
                   onChange={(e) => update(i, { skill_tag: e.target.value })}
                   aria-label="Skill"
-                  className="h-10 rounded-md border bg-background px-2 text-sm"
+                  className="h-12 rounded-2xl border bg-card px-3 text-[15px]"
                 >
                   <option value="web">Web</option>
                   <option value="design">Design</option>
@@ -137,7 +139,7 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
           {projects.length < 6 && (
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               className="self-start rounded-full"
               onClick={() => setProjects([...projects, { title: "", one_line: "", link: "", skill_tag: "web" }])}
             >
@@ -178,6 +180,7 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
   function next() {
     if (!current.ok) return;
     if (!last) {
+      setDir("fwd");
       setStep(step + 1);
       return;
     }
@@ -209,15 +212,20 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
       <div className="flex h-12 items-center gap-3">
         <button
           type="button"
-          onClick={() => setStep(Math.max(0, step - 1))}
+          onClick={() => {
+            setDir("back");
+            setStep(Math.max(0, step - 1));
+          }}
           aria-label="Back"
-          className={cn("-ml-2 flex size-10 items-center justify-center rounded-full hover:bg-accent", step === 0 && "invisible")}
+          className={cn("press -ml-2 flex size-10 items-center justify-center rounded-full bg-card shadow-card", step === 0 && "invisible")}
         >
           <ArrowLeft className="size-5" />
         </button>
         <div className="flex flex-1 gap-1.5">
           {steps.map((_, i) => (
-            <div key={i} className={cn("h-1.5 flex-1 rounded-full bg-muted transition-colors", i <= step && "bg-primary")} />
+            <div key={i} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e3e6f0]">
+              <div className={cn("h-full origin-left rounded-full bg-primary transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]", i <= step ? "scale-x-100" : "scale-x-0")} />
+            </div>
           ))}
         </div>
         <span className="w-10 text-right text-xs text-muted-foreground">
@@ -231,15 +239,14 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
           e.preventDefault();
           next();
         }}
-        className="pp-rise flex flex-1 flex-col"
-        style={{ animationDuration: "0.35s" }}
+        className={cn("flex flex-1 flex-col", dir === "fwd" ? "pp-step-fwd" : "pp-step-back")}
       >
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">{current.title}</h1>
+        <h1 className="mt-8 text-[26px] font-extrabold leading-tight tracking-tight">{current.title}</h1>
         <p className="mt-2 text-muted-foreground">{current.hint}</p>
         <div className="mt-6">{current.body}</div>
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
         <div className="mt-auto pt-8">
-          <Button type="submit" size="lg" disabled={!current.ok || saving} className="h-12 w-full rounded-xl">
+          <Button type="submit" size="lg" disabled={!current.ok || saving} className="w-full">
             {last ? (saving ? "Saving…" : "Finish") : "Continue"}
           </Button>
         </div>
@@ -267,11 +274,11 @@ function Choice({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "flex items-center gap-4 rounded-xl border p-4 text-left transition-colors",
-        selected ? "border-primary bg-primary/5" : "hover:bg-accent",
+        "press press-soft flex items-center gap-4 rounded-[22px] bg-card p-4 text-left shadow-card ring-2 ring-transparent",
+        selected ? "ring-primary bg-[#f3f5ff]" : "hover:bg-accent",
       )}
     >
-      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted", selected && "bg-primary text-primary-foreground")}>
+      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full bg-muted transition-colors", selected && "bg-primary text-primary-foreground")}>
         <Icon className="size-5" />
       </span>
       <span className="flex-1">
