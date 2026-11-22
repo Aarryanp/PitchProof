@@ -8,8 +8,8 @@
 // keyword: extra word to look for in the company name or description, for
 // types that share a broad industry (dentists sit under "Medical Practices").
 //
-// TODO before the find step goes live: confirm each industry value with
-// Crustdata's free autocomplete, so no credits are spent on empty searches.
+// Every industry value below was confirmed with Crustdata's free
+// autocomplete on 22 Nov 2026, so no credits go on searches that match nothing.
 // "Other" (free text typed by the student) has no mapping: the find step
 // falls back to an Olostep web search for "<text> in <city>".
 
@@ -22,8 +22,8 @@ export type BusinessType = {
 
 const health = ["Hospitals and Health Care", "Hospital & Health Care", "Medical Practices", "Medical Practice", "Mental Health Care"];
 const software = ["Software Development", "Computer Software"];
-const itServices = ["IT Services and IT Consulting", "Information Technology & Services", "Information Technology and Services"];
-const fitness = ["Wellness and Fitness Services", "Health, Wellness & Fitness", "Health, Wellness and Fitness"];
+const itServices = ["IT Services and IT Consulting", "Information Technology & Services"];
+const fitness = ["Wellness and Fitness Services", "Health, Wellness & Fitness"];
 
 export const businessTypes: BusinessType[] = [
   // Tech and online
@@ -31,9 +31,9 @@ export const businessTypes: BusinessType[] = [
   { label: "IT services and software agencies", group: "Tech and online", industries: itServices },
   { label: "SaaS and software products", group: "Tech and online", industries: software, keyword: "SaaS" },
   { label: "E-commerce and D2C brands", group: "Tech and online", industries: ["Retail", "Online and Mail Order Retail", "Consumer Goods", "Retail Apparel and Fashion", "Personal Care Product Manufacturing"], keyword: "online" },
-  { label: "Edtech", group: "Tech and online", industries: ["E-Learning Providers", "E-Learning", "Education Technology"] },
+  { label: "Edtech", group: "Tech and online", industries: ["E-Learning Providers", "E-learning"] },
   { label: "Fintech", group: "Tech and online", industries: ["Financial Services"], keyword: "fintech" },
-  { label: "Marketing and design agencies", group: "Tech and online", industries: ["Advertising Services", "Marketing and Advertising", "Design Services", "Graphic Design"] },
+  { label: "Marketing and design agencies", group: "Tech and online", industries: ["Advertising Services", "Marketing & Advertising", "Design Services", "Graphic Design"] },
   // Local businesses
   { label: "Clinics and hospitals", group: "Local businesses", industries: health },
   { label: "Dental clinics", group: "Local businesses", industries: health, keyword: "dental" },

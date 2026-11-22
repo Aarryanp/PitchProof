@@ -24,40 +24,12 @@ For each part, write:
 - Files: `app/welcome/`, `app/onboarding/`, `app/tour/`, `app/(app)/layout.tsx` and `components/app-nav.tsx` (the frame and menus), `app/(app)/pipeline/phone-leads.tsx`, `components/logo.tsx`, `components/install-app.tsx`, `app/manifest.ts`, `app/icon.svg`, `app/apple-icon.png`, `public/icon-*.png`, the animations at the end of `app/globals.css`, and `proxy.ts` (sends "/" to the welcome screen or the app).
 - How to test it: open the site in a private window: you land on the welcome screen. Sign in with a Google account that has no profile yet: you go through the questions, then the tour. On a phone in Chrome, Settings > "Install app" adds it to the home screen.
 
-## Step 1: Find companies
-- What it does:
-- Files:
-- How to test it:
-
-## Step 2–3: Read and measure the website
-- What it does:
-- Files:
-- How to test it:
-
-## Step 4: Judge + quality gate
-- What it does:
-- Files:
-- How to test it:
-
-## Step 5: Find the person
-- What it does:
-- Files:
-- How to test it:
-
-## Step 6: Make the fix
-- What it does:
-- Files:
-- How to test it:
-
-## Step 7: Company page
-- What it does:
-- Files:
-- How to test it:
-
-## Step 8: Write the email
-- What it does:
-- Files:
-- How to test it:
+## The agent (steps 1–8), connected to "Run the agent"
+- What it does: when a student taps **Run the agent** in the phone app's Search screen, the app calls the Next.js server twice. First `/api/agent/search` saves the search and picks businesses: it reuses businesses already saved in Supabase for free, and only asks Crustdata for new ones if `CRUSTDATA_LIVE=on`. It claims them so no other student pitches the same one. Then the app calls `/api/agent/company` once per business, three at a time. For each one the server reads the home page (Olostep), measures it on a phone (PageSpeed), turns the results into problems for the student's skill (skill packs), runs the quality gate, asks Gemini to check it's really that kind of business, finds an email on pages we already read, and asks Gemini to write a 60–100 word email in the student's voice. The email is checked with the same pitch rules as the Pitch review screen, and rewritten up to 3 times if a rule fails. It's saved as a draft, so it shows in Leads under "Needs approval". Nothing is sent.
+- Saving credits: every reply from Olostep, Crustdata and PageSpeed is saved in the Supabase table `fetch_cache` and read from there first, so nothing is paid for twice. New Crustdata or Olostep calls are off unless `CRUSTDATA_LIVE=on` or `OLOSTEP_LIVE=on` is set. The numbers in findings always come from the tools; Gemini only judges "is this really a clinic?" and writes the email.
+- Files: `app/api/agent/search/route.ts`, `app/api/agent/company/route.ts`, `app/api/agent/status/route.ts` (which keys are missing), `lib/agent/` (find, process, quality gate, email, cache, sign-in check, switches), `lib/crustdata.ts`, `lib/olostep.ts`, `lib/pagespeed.ts`, `lib/gemini.ts`, `lib/skill-packs/` (web, design, SEO, chatbot), `scripts/seed-cache.mjs` (copies our 21 Nov test results into the cache), `mobile/lib/data/repo.dart` (`Agent`), `mobile/lib/screens/search.dart`.
+- Keys it needs (in `.env.local` and Vercel): `SUPABASE_SECRET_KEY`, `GEMINI_API_KEY`, `PAGESPEED_API_KEY`. Open `/api/agent/status` to see which are missing.
+- How to test it: `npm test` runs the three core tests (quality gate, email rules, no send without approval). Then sign in on the phone app, save a profile with 2–3 writing samples, and search "Clinics and hospitals" in "Nagpur". The 19 saved clinics are checked using saved website reads, and the ones with a real problem and an email get a draft in Leads.
 
 ## Step 9: Approve and send
 - What it does:
