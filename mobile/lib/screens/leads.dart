@@ -24,7 +24,9 @@ class LeadsScreenState extends State<LeadsScreen> {
   late Future<({Loaded<List<Lead>> leads, bool signedIn, bool hasProfile})> _data = Repo.leads();
   bool _showSkipped = false;
 
-  void reload() => setState(() => _data = Repo.leads());
+  void reload() => setState(() {
+        _data = Repo.leads();
+      });
 
   Future<void> _open(Lead l) async {
     await Navigator.of(context).push(CupertinoPageRoute(builder: (_) => PitchScreen(id: l.pitchId!)));

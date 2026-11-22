@@ -25,6 +25,8 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Sign-in links are handled by Supabase, not by page navigation. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <!-- Opens the app when sign-in (Google or email link) sends people back. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

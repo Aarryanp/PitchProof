@@ -24,7 +24,9 @@ class MeScreen extends StatefulWidget {
 class _MeScreenState extends State<MeScreen> {
   late Future<Loaded<(Student, List<Project>)>> _data = Repo.profile();
 
-  void _reload() => setState(() => _data = Repo.profile());
+  void _reload() => setState(() {
+        _data = Repo.profile();
+      });
 
   Future<void> _signOut() async {
     if (hasBackend) await Supabase.instance.client.auth.signOut();

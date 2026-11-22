@@ -26,7 +26,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
       body: RefreshIndicator(
         color: C.primary,
         onRefresh: () async {
-          setState(() => _data = Repo.results());
+          setState(() {
+            _data = Repo.results();
+          });
           await _data;
         },
         child: FutureBuilder(
