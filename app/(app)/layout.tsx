@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { LogOut } from "lucide-react";
 import { BottomTabs, SideNav } from "@/components/app-nav";
 import { Logo, LogoMark } from "@/components/logo";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 
 // Shared frame for the student screens. Phones: a small top bar and a tab bar
 // at the bottom. Computers: a menu down the left side.
@@ -44,9 +44,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 async function Account({ variant }: { variant: "side" | "top" }) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) {
+  const user = await getSessionUser();
+  if (!user) {
     return (
       <Link
         href="/sign-in"
@@ -56,7 +55,7 @@ async function Account({ variant }: { variant: "side" | "top" }) {
       </Link>
     );
   }
-  const email = data.user.email ?? "";
+  const email = user.email ?? "";
   if (variant === "top") {
     return (
       <Link href="/profile" aria-label="Your profile" className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">

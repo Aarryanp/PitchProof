@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft, CheckCircle2, ExternalLink, Gauge, MessageCircleQuestion } from "lucide-react";
 import { getPitch } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/loading";
@@ -32,9 +32,7 @@ async function Review({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { pitch, sample } = await getPitch(id);
   if (!pitch) notFound();
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
-  const signedIn = Boolean(auth.user);
+  const signedIn = Boolean(await getSessionUser());
   const hard = pitch.findings.filter((f) => f.hard);
 
   return (

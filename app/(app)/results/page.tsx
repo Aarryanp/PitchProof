@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getResults } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loading } from "@/components/loading";
 import { PageHeader } from "@/components/page-header";
@@ -24,8 +24,7 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
 async function Results() {
   const { results: r, sample } = await getResults();
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   const stats = [
     { label: "Emails sent", value: r.sent },
     { label: "Pages opened", value: r.opened, note: `${pct(r.opened, r.sent)}% of sent` },
@@ -45,7 +44,7 @@ async function Results() {
         description="How your pitches are doing."
         actions={<ExportButton results={r} />}
       />
-      {sample && <SampleNote signedIn={Boolean(auth.user)}>These numbers are made up. Yours show here after your first emails go out.</SampleNote>}
+      {sample && <SampleNote signedIn={Boolean(user)}>These numbers are made up. Yours show here after your first emails go out.</SampleNote>}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (
