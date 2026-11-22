@@ -94,3 +94,15 @@ For each part, write:
 **Which files.** `mobile/lib/main.dart` (start-up), `mobile/lib/theme.dart` (colours, spacing, motion), `mobile/lib/widgets/` (press feel, settle-in animation, shimmer, buttons, cards), `mobile/lib/screens/` (one file per screen), `mobile/lib/data/` (Supabase reads and writes, sample data, email rules), `mobile/test/pitch_rules_test.dart`, `.github/workflows/mobile.yml` (builds the APK).
 
 **How to test.** See `mobile/README.md`: `flutter run --dart-define-from-file=env.json` with your phone plugged in. `flutter test` runs the email-rule tests.
+
+## Phone app: less clutter (22 Nov)
+
+**What changed:** each tab now shows only what it needs.
+- **Leads** is one plain list. The ones waiting for your approval come first, then the furthest along. Each card has a small coloured label with its stage. No sample-data banner, and when you are signed in with no leads yet you see "No leads yet" with a New search button, instead of made-up businesses.
+- **Results** is four blocks: Emails sent, Pages opened, Replies, Positive replies. Tap a block to see those companies. Under the blocks, every company you emailed is listed best first: positive replies, other replies, opened, then just sent. The four numbers are counted from that same list, so they always match.
+- **Search** shows what happened right under the Run the agent button: the search is saved, and the next steps (find, check websites, draft emails) show as waiting until the agent steps are connected.
+- **Me** looks like a profile on a job site: a coloured cover banner, your avatar over its edge, your name and details below, then your projects and settings.
+
+**Files:** `mobile/lib/screens/leads.dart`, `results.dart`, `search.dart`, `me.dart`, `mobile/lib/data/models.dart` (new `Outcome` and `SentPitch`), `mobile/lib/data/repo.dart` (Results now reads each emailed company with its page views and replies), `mobile/lib/data/sample_data.dart`.
+
+**How to test:** run the app, sign in, and open each tab. "Look around with sample data" on the Welcome screen still shows made-up businesses, without the banner.

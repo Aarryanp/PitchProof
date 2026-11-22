@@ -142,15 +142,38 @@ class Project {
   String link;
 }
 
+/// How far a sent pitch got, best first.
+enum Outcome { positive, replied, opened, sent }
+
+String outcomeName(Outcome o) => switch (o) {
+      Outcome.positive => 'Positive reply',
+      Outcome.replied => 'Replied',
+      Outcome.opened => 'Opened your page',
+      Outcome.sent => 'Sent',
+    };
+
+/// One company you emailed, and how far it got.
+class SentPitch {
+  const SentPitch({required this.pitchId, required this.companyName, this.sector, this.city, required this.outcome});
+  final String pitchId;
+  final String companyName;
+  final String? sector;
+  final String? city;
+  final Outcome outcome;
+}
+
+/// Everything you emailed. The four numbers come from this list, so they
+/// always match the companies shown.
 class Results {
-  const Results({required this.sent, required this.opened, required this.replied, required this.positive, required this.audit, required this.generic, required this.skillGaps});
-  final int sent;
-  final int opened;
-  final int replied;
-  final int positive;
-  final (int sent, int replied) audit;
-  final (int sent, int replied) generic;
-  final List<(String skill, int count)> skillGaps;
+  const Results(this.pitches);
+  final List<SentPitch> pitches;
+  int get sent => pitches.length;
+  int get opened => pitches.where((p) => p.outcome != Outcome.sent).length;
+  int get replied => pitches.where((p) => p.outcome == Outcome.replied || p.outcome == Outcome.positive).length;
+  int get positive => pitches.where((p) => p.outcome == Outcome.positive).length;
+
+  /// Best first: positive replies, other replies, opened, then just sent.
+  List<SentPitch> get ordered => [...pitches]..sort((a, b) => a.outcome.index.compareTo(b.outcome.index));
 }
 
 /// A screen's data plus whether it is made-up sample data.

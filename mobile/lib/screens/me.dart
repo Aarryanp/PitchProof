@@ -14,7 +14,8 @@ import 'sign_in.dart';
 import 'tour.dart';
 import 'welcome.dart';
 
-/// Me: your profile as companies see it, and the app settings.
+/// Me: a profile page like the ones on job sites. A cover banner, your
+/// avatar over it, your details below, then your projects and settings.
 class MeScreen extends StatefulWidget {
   const MeScreen({super.key});
   @override
@@ -41,56 +42,85 @@ class _MeScreenState extends State<MeScreen> {
       body: FutureBuilder(
         future: _data,
         builder: (context, snap) => ListView(
-          padding: EdgeInsets.fromLTRB(S.page, pad.top + 16, S.page, pad.bottom + 110),
+          padding: EdgeInsets.only(bottom: pad.bottom + 110),
           children: [
-            const ScreenTitle('Me', subtitle: 'Companies see your name, one line about you and these projects.'),
-            const SizedBox(height: 18),
-            if (!snap.hasData) const ListSkeleton(rows: 2) else ..._content(snap.data!),
+            if (!snap.hasData)
+              Padding(padding: EdgeInsets.fromLTRB(S.page, pad.top + 16, S.page, 0), child: const ListSkeleton(rows: 2))
+            else ...[
+              _header(snap.data!.value.$1, pad.top),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: S.page),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _content(snap.data!)),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _content(Loaded<(Student, List<Project>)> d) {
-    final (s, projects) = d.value;
-    final signedIn = userId != null;
+  /// Cover banner across the top, the avatar sitting over its bottom edge,
+  /// then name, year and city, one line about you and your skills.
+  Widget _header(Student s, double top) {
     final goal = switch (s.goal) { 'freelance' => 'Paid projects', 'internship' => 'An internship', 'job' => 'A job', _ => null };
-    return [
-      if (d.sample) ...[const Settle(child: SampleNote('This is an example profile. Sign in to make your own.')), const SizedBox(height: S.gap)],
-      Settle(
-        index: 1,
-        child: SoftCard(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Avatar(s.name.isEmpty ? (userEmail ?? '?') : s.name, size: 60),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.name.isEmpty ? 'Your name' : s.name, style: T.h2.copyWith(fontSize: 20)),
-                  Text([s.yearOrGrad, s.city].whereType<String>().where((x) => x.isNotEmpty).join(' · '), style: T.small),
-                ]),
-              ),
+    const cover = 150.0, avatar = 96.0;
+    final meta = [s.yearOrGrad, s.city].whereType<String>().where((x) => x.isNotEmpty).join(' · ');
+    return Settle(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Stack(clipBehavior: Clip.none, children: [
+          Container(
+            height: cover + top,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF3B5BDB), Color(0xFF7048E8)]),
+            ),
+            child: Stack(children: [
+              Positioned(right: -40, top: -30, child: Container(width: 180, height: 180, decoration: const BoxDecoration(color: Color(0x14FFFFFF), shape: BoxShape.circle))),
+              Positioned(right: 70, bottom: -50, child: Container(width: 120, height: 120, decoration: const BoxDecoration(color: Color(0x10FFFFFF), shape: BoxShape.circle))),
             ]),
-            if ((s.bio ?? '').isNotEmpty) ...[const SizedBox(height: 14), Text(s.bio!, style: T.body)],
+          ),
+          Positioned(
+            left: S.page,
+            bottom: -avatar / 2,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(color: C.bg, shape: BoxShape.circle, boxShadow: cardShadow),
+              child: Avatar(s.name.isEmpty ? (userEmail ?? '?') : s.name, size: avatar),
+            ),
+          ),
+        ]),
+        const SizedBox(height: avatar / 2 + 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: S.page),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(s.name.isEmpty ? 'Your name' : s.name, style: T.title.copyWith(fontSize: 26)),
+            if (meta.isNotEmpty) ...[const SizedBox(height: 2), Text(meta, style: T.small.copyWith(fontSize: 14))],
+            if ((s.bio ?? '').isNotEmpty) ...[const SizedBox(height: 12), Text(s.bio!, style: T.body)],
             const SizedBox(height: 14),
             Wrap(spacing: 8, runSpacing: 8, children: [
               if (goal != null) Pill(goal),
-              for (final k in s.skills) Pill(k == 'web' ? 'Web development' : 'Design', bg: C.bg, fg: C.fg),
+              for (final k in s.skills) Pill(k == 'web' ? 'Web development' : 'Design', bg: C.card, fg: C.fg),
             ]),
           ]),
         ),
-      ),
-      const SizedBox(height: S.gap),
+      ]),
+    );
+  }
+
+  List<Widget> _content(Loaded<(Student, List<Project>)> d) {
+    final (s, projects) = d.value;
+    final signedIn = userId != null;
+    return [
+      const SizedBox(height: 22),
+      Text('THINGS YOU HAVE MADE', style: T.tiny),
+      const SizedBox(height: 10),
       Settle(
         index: 2,
         child: SoftCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Things you have made', style: T.h2),
-            if (projects.isEmpty) ...[const SizedBox(height: 8), Text('None yet.', style: T.small)],
-            for (final p in projects)
+            if (projects.isEmpty) Text('None yet.', style: T.small),
+            for (final (i, p) in projects.indexed)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: EdgeInsets.only(top: i == 0 ? 0 : 14),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
                     width: 38,

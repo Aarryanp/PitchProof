@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
@@ -6,8 +7,9 @@ import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
 
-/// Results: what was sent, opened and answered, and whether audit pitches
-/// get more replies than generic ones.
+/// Results: four blocks (sent, opened, replies, positive replies). Tap a
+/// block to see those companies. Below them, every company you emailed,
+/// best first: positive replies, other replies, opened, then just sent.
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
   @override
@@ -17,7 +19,8 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   late Future<Loaded<Results>> _data = Repo.results();
 
-  int _pct(int a, int b) => b == 0 ? 0 : (a * 100 / b).round();
+  void _openList(String title, List<SentPitch> list) =>
+      Navigator.of(context).push(CupertinoPageRoute(builder: (_) => _CompanyListScreen(title: title, pitches: list)));
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +40,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             padding: EdgeInsets.fromLTRB(S.page, pad.top + 16, S.page, pad.bottom + 110),
             children: [
-              const ScreenTitle('Results', subtitle: 'How your pitches are doing.'),
+              const ScreenTitle('Results', subtitle: 'How your emails are doing.'),
               const SizedBox(height: 18),
-              if (!snap.hasData) const ListSkeleton(rows: 2) else ..._content(snap.data!),
+              if (snap.hasError)
+                Text('Could not load results: ${snap.error}', style: const TextStyle(color: C.danger))
+              else if (!snap.hasData)
+                const ListSkeleton(rows: 2)
+              else
+                ..._content(snap.data!.value),
             ],
           ),
         ),
@@ -47,107 +55,118 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
-  List<Widget> _content(Loaded<Results> d) {
-    final r = d.value;
-    final stats = [
-      ('Emails sent', r.sent, null),
-      ('Pages opened', r.opened, '${_pct(r.opened, r.sent)}% of sent'),
-      ('Replies', r.replied, '${_pct(r.replied, r.sent)}% of sent'),
-      ('Positive replies', r.positive, null),
+  List<Widget> _content(Results r) {
+    final all = r.ordered;
+    final blocks = [
+      ('Emails sent', r.sent, Icons.send_rounded, all),
+      ('Pages opened', r.opened, Icons.visibility_outlined, all.where((p) => p.outcome != Outcome.sent).toList()),
+      ('Replies', r.replied, Icons.chat_bubble_outline_rounded, all.where((p) => p.outcome.index <= Outcome.replied.index).toList()),
+      ('Positive replies', r.positive, Icons.thumb_up_alt_outlined, all.where((p) => p.outcome == Outcome.positive).toList()),
     ];
-    final rates = [('Audit pitch', r.audit), ('Generic pitch', r.generic)];
-    final best = rates.map((x) => _pct(x.$2.$2, x.$2.$1)).fold(1, (a, b) => a > b ? a : b);
     return [
-      if (d.sample) ...[const Settle(child: SampleNote('These numbers are made up. Yours show here after your first emails go out.')), const SizedBox(height: S.gap)],
       GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: S.gap,
         crossAxisSpacing: S.gap,
-        childAspectRatio: 1.45,
+        childAspectRatio: 1.35,
         children: [
-          for (final (i, s) in stats.indexed)
+          for (final (i, (label, n, icon, list)) in blocks.indexed)
             Settle(
-              index: i + 1,
-              child: Container(
+              index: i,
+              child: SoftCard(
+                color: i == 3 ? C.primary : C.card,
                 padding: const EdgeInsets.all(16),
-                decoration: cardBox(color: i == 2 ? C.primary : C.card),
+                onTap: () => _openList(label, list),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.$1, style: T.small.copyWith(color: i == 2 ? Colors.white70 : C.muted, fontWeight: FontWeight.w600)),
+                  Row(children: [
+                    Icon(icon, size: 18, color: i == 3 ? Colors.white70 : C.muted),
+                    const Spacer(),
+                    Icon(Icons.chevron_right_rounded, size: 20, color: i == 3 ? Colors.white70 : C.muted),
+                  ]),
                   const Spacer(),
                   TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: s.$2.toDouble()),
+                    tween: Tween(begin: 0, end: n.toDouble()),
                     duration: const Duration(milliseconds: 800),
                     curve: M.ease,
-                    builder: (_, v, _) => Text('${v.round()}', style: T.big.copyWith(color: i == 2 ? Colors.white : C.fg, fontSize: 30)),
+                    builder: (_, v, _) => Text('${v.round()}', style: T.big.copyWith(color: i == 3 ? Colors.white : C.fg, fontSize: 30)),
                   ),
-                  if (s.$3 != null) ...[const SizedBox(height: 4), Text(s.$3!, style: T.small.copyWith(fontSize: 12, color: i == 2 ? Colors.white70 : C.muted))],
+                  const SizedBox(height: 2),
+                  Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.small.copyWith(color: i == 3 ? Colors.white70 : C.muted, fontWeight: FontWeight.w600)),
                 ]),
               ),
             ),
         ],
       ),
-      const SizedBox(height: S.gap),
-      Settle(
-        index: 5,
-        child: SoftCard(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Audit pitch vs generic pitch', style: T.h2),
-            const SizedBox(height: 4),
-            Text('Reply rate for each kind of email, sent to similar businesses.', style: T.small),
-            for (final (label, (sent, replied)) in rates) ...[
-              const SizedBox(height: 16),
-              Row(children: [
-                Text(label, style: T.h3),
-                const Spacer(),
-                Text('${_pct(replied, sent)}% · $replied of $sent', style: T.small),
-              ]),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  height: 12,
-                  color: C.bg,
-                  alignment: Alignment.centerLeft,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: _pct(replied, sent) / best),
-                    duration: const Duration(milliseconds: 900),
-                    curve: M.ease,
-                    builder: (_, v, _) => FractionallySizedBox(
-                      widthFactor: v,
-                      child: Container(decoration: BoxDecoration(color: label.startsWith('Audit') ? C.primary : const Color(0xFFB4B9CC), borderRadius: BorderRadius.circular(999))),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ]),
-        ),
-      ),
-      const SizedBox(height: S.gap),
-      Settle(
-        index: 6,
-        child: SoftCard(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Skills to learn next', style: T.h2),
-            const SizedBox(height: 4),
-            Text("Problems the agent found that your skills don't cover yet.", style: T.small),
-            const SizedBox(height: 8),
-            if (r.skillGaps.isEmpty) Text('None yet.', style: T.small),
-            for (final (skill, n) in r.skillGaps)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(children: [
-                  const Icon(Icons.lightbulb_outline_rounded, size: 18, color: C.amber),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(skill, style: T.body)),
-                  Text('$n ${n == 1 ? 'business' : 'businesses'}', style: T.small),
-                ]),
-              ),
-          ]),
-        ),
-      ),
+      const SizedBox(height: 26),
+      Text('COMPANIES', style: T.tiny),
+      const SizedBox(height: 10),
+      if (all.isEmpty)
+        Settle(index: 4, child: SoftCard(child: Text('No emails sent yet. Companies show here once you approve and send your first pitches.', style: T.small))),
+      for (final (i, p) in all.indexed) ...[
+        Settle(index: 4 + i, child: _CompanyRow(p)),
+        const SizedBox(height: 10),
+      ],
     ];
+  }
+}
+
+/// One company you emailed, with how far it got.
+class _CompanyRow extends StatelessWidget {
+  const _CompanyRow(this.p);
+  final SentPitch p;
+  @override
+  Widget build(BuildContext context) {
+    final meta = [p.sector, p.city].whereType<String>().where((x) => x.isNotEmpty).join(' · ');
+    final (bg, fg) = switch (p.outcome) {
+      Outcome.positive => (C.okBg, C.okFg),
+      Outcome.replied => (C.primarySoft, C.primary),
+      Outcome.opened => (C.problemBg, C.problemFg),
+      Outcome.sent => (const Color(0xFFECEEF6), C.muted),
+    };
+    return SoftCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(children: [
+        Avatar(p.companyName, size: 42),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(p.companyName, style: T.h3),
+            if (meta.isNotEmpty) Text(meta, style: T.small),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        Pill(outcomeName(p.outcome), bg: bg, fg: fg),
+      ]),
+    );
+  }
+}
+
+/// The companies behind one block, opened by tapping it.
+class _CompanyListScreen extends StatelessWidget {
+  const _CompanyListScreen({required this.title, required this.pitches});
+  final String title;
+  final List<SentPitch> pitches;
+  @override
+  Widget build(BuildContext context) {
+    final pad = MediaQuery.of(context).padding;
+    return Scaffold(
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(S.page, pad.top + 12, S.page, pad.bottom + 30),
+        children: [
+          const Align(alignment: Alignment.centerLeft, child: BackBtn(label: 'Results')),
+          const SizedBox(height: 18),
+          ScreenTitle(title, subtitle: '${pitches.length} ${pitches.length == 1 ? 'company' : 'companies'}'),
+          const SizedBox(height: 18),
+          if (pitches.isEmpty) SoftCard(child: Text('None yet.', style: T.small)),
+          for (final (i, p) in pitches.indexed) ...[
+            Settle(index: i, child: _CompanyRow(p)),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
   }
 }

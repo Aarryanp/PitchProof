@@ -36,7 +36,7 @@ class Repo {
     ]);
     final companies = results[0], audits = results[1], pitches = results[2];
     final hasProfile = results[3].isNotEmpty;
-    if (companies.isEmpty) return (leads: const Loaded(sampleLeads, sample: true), signedIn: true, hasProfile: hasProfile);
+    if (companies.isEmpty) return (leads: const Loaded(<Lead>[]), signedIn: true, hasProfile: hasProfile);
     final leads = companies.map((c) {
       final audit = audits.where((a) => a['company_id'] == c['id']).firstOrNull;
       final pitch = pitches.where((p) => p['company_id'] == c['id']).firstOrNull;
@@ -120,28 +120,26 @@ class Repo {
     final id = userId;
     if (id == null) return const Loaded(sampleResults, sample: true);
     final r = await Future.wait([
-      _db.from('pitches').select('id, status, pitch_type').eq('student_id', id),
+      _db.from('pitches').select('id, status, companies(name, sector, city)').eq('student_id', id).inFilter('status', ['sent', 'opened', 'replied', 'declined']),
       _db.from('page_views').select('pitch_id'),
       _db.from('messages').select('pitch_id, reply_label').eq('kind', 'reply'),
-      _db.from('skill_gaps').select('missing_skill, company_count').eq('student_id', id),
     ]);
-    final sent = r[0].where((p) => ['sent', 'opened', 'replied', 'declined'].contains(p['status'])).toList();
-    if (sent.isEmpty) return const Loaded(sampleResults, sample: true);
-    final repliedIds = r[2].map((m) => m['pitch_id']).toSet();
-    (int, int) byType(String t) {
-      final s = sent.where((p) => p['pitch_type'] == t);
-      return (s.length, s.where((p) => repliedIds.contains(p['id'])).length);
-    }
-
-    return Loaded(Results(
-      sent: sent.length,
-      opened: r[1].map((v) => v['pitch_id']).toSet().length,
-      replied: repliedIds.length,
-      positive: r[2].where((m) => m['reply_label'] == 'positive').length,
-      audit: byType('audit'),
-      generic: byType('generic'),
-      skillGaps: r[3].map((g) => ('${g['missing_skill']}', (g['company_count'] as int?) ?? 0)).toList(),
-    ));
+    final opened = r[1].map((v) => v['pitch_id']).toSet();
+    final replies = {for (final m in r[2]) m['pitch_id']: m['reply_label']};
+    final list = r[0].map((p) {
+      final co = Map<String, dynamic>.from(p['companies'] ?? {});
+      final reply = replies[p['id']];
+      final status = '${p['status']}';
+      final outcome = reply == 'positive'
+          ? Outcome.positive
+          : (replies.containsKey(p['id']) || status == 'replied' || status == 'declined')
+              ? Outcome.replied
+              : (opened.contains(p['id']) || status == 'opened')
+                  ? Outcome.opened
+                  : Outcome.sent;
+      return SentPitch(pitchId: '${p['id']}', companyName: '${co['name'] ?? ''}', sector: co['sector'] as String?, city: co['city'] as String?, outcome: outcome);
+    }).toList();
+    return Loaded(Results(list));
   }
 
   static Future<Loaded<(Student, List<Project>)>> profile() async {

@@ -80,12 +80,8 @@ Pitch? samplePitch(String id) {
   );
 }
 
-const sampleResults = Results(
-  sent: 24,
-  opened: 11,
-  replied: 4,
-  positive: 2,
-  audit: (12, 3),
-  generic: (12, 1),
-  skillGaps: [('SEO basics', 4), ('Online booking setup', 2)],
-);
+const sampleResults = Results([
+  SentPitch(pitchId: 'sample-5', companyName: 'Little Steps Child Clinic', sector: 'Paediatrics', city: 'Nagpur', outcome: Outcome.positive),
+  SentPitch(pitchId: 'sample-4', companyName: 'Shree Eye Hospital', sector: 'Eye hospital', city: 'Nagpur', outcome: Outcome.opened),
+  SentPitch(pitchId: 'sample-3', companyName: 'City Skin Clinic', sector: 'Dermatology', city: 'Nagpur', outcome: Outcome.sent),
+]);

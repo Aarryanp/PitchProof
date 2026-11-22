@@ -33,7 +33,7 @@ class _SearchScreenState extends State<SearchScreen> {
       await Repo.saveSearch(skill: skill, sector: _sector.text, city: _city.text, count: count.round());
       setState(() {
         ok = true;
-        note = 'Search saved. The agent will look for ${count.round()} businesses once its steps are connected.';
+        note = '${count.round()} ${_sector.text.trim().toLowerCase()} in ${_city.text.trim()}. The agent steps are not connected to the app yet, so the next steps wait.';
       });
     } catch (e) {
       setState(() {
@@ -112,18 +112,52 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 18),
           Settle(index: 2, child: Btn('Run the agent', icon: Icons.auto_awesome_rounded, expand: true, busy: busy, onTap: _run)),
+          // What the agent did with this search shows right here, under the button.
           AnimatedSize(
             duration: M.normal,
             curve: M.ease,
+            alignment: Alignment.topCenter,
             child: note == null
                 ? const SizedBox(width: double.infinity)
                 : Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: ok ? C.okBg : C.problemBg, borderRadius: BorderRadius.circular(16)),
-                      child: Text(note!, style: TextStyle(color: ok ? C.okFg : C.problemFg, fontWeight: FontWeight.w600)),
-                    ),
+                    padding: const EdgeInsets.only(top: 18),
+                    child: !ok
+                        ? Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(color: C.problemBg, borderRadius: BorderRadius.circular(16)),
+                            child: Text(note!, style: const TextStyle(color: C.problemFg, fontWeight: FontWeight.w600)),
+                          )
+                        : Settle(
+                            child: SoftCard(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text('This search', style: T.h2),
+                                const SizedBox(height: 2),
+                                Text(note!, style: T.small),
+                                const SizedBox(height: 14),
+                                for (final (i, (step, done)) in const [
+                                  ('Search saved', true),
+                                  ('Find businesses', false),
+                                  ('Check their websites', false),
+                                  ('Draft emails for you to approve', false),
+                                ].indexed)
+                                  Padding(
+                                    padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+                                    child: Row(children: [
+                                      Container(
+                                        width: 26,
+                                        height: 26,
+                                        decoration: BoxDecoration(color: done ? C.green : C.bg, shape: BoxShape.circle),
+                                        child: Icon(done ? Icons.check_rounded : Icons.more_horiz_rounded, size: 16, color: done ? Colors.white : C.muted),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: Text(step, style: T.h3.copyWith(color: done ? C.fg : C.muted))),
+                                    ]),
+                                  ),
+                                const SizedBox(height: 14),
+                                Text('Businesses the agent finds will be listed here and in Leads.', style: T.small.copyWith(fontSize: 12)),
+                              ]),
+                            ),
+                          ),
                   ),
           ),
         ],
