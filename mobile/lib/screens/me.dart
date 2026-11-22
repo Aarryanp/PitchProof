@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models.dart';
@@ -107,10 +108,10 @@ class _MeScreenState extends State<MeScreen> {
         index: 3,
         child: signedIn
             ? Btn('Edit profile', icon: Icons.edit_outlined, kind: BtnKind.soft, expand: true, onTap: () async {
-                final saved = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => OnboardingScreen(student: s, projects: projects, editing: true)));
+                final saved = await Navigator.of(context).push(CupertinoPageRoute(builder: (_) => OnboardingScreen(student: s, projects: projects, editing: true)));
                 if (saved == true) _reload();
               })
-            : Btn('Sign in to make your own', expand: true, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SignInScreen()))),
+            : Btn('Sign in to make your own', expand: true, onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const SignInScreen()))),
       ),
       const SizedBox(height: 26),
       Text('SETTINGS', style: T.tiny),
@@ -124,7 +125,7 @@ class _MeScreenState extends State<MeScreen> {
             const Divider(height: 1, indent: 56, color: C.line),
             _Row(icon: Icons.speed_rounded, label: 'Daily limit', trailing: Text('${s.dailyLimit} a day', style: T.small.copyWith(fontWeight: FontWeight.w700))),
             const Divider(height: 1, indent: 56, color: C.line),
-            _Row(icon: Icons.play_circle_outline_rounded, label: 'Replay the tour', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TourScreen(replay: true)))),
+            _Row(icon: Icons.play_circle_outline_rounded, label: 'Replay the tour', onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const TourScreen(replay: true)))),
             if (signedIn) ...[
               const Divider(height: 1, indent: 56, color: C.line),
               _Row(icon: Icons.logout_rounded, label: 'Sign out', danger: true, onTap: _signOut),

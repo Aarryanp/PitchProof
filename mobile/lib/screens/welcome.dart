@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/logo.dart';
@@ -62,12 +63,12 @@ class WelcomeScreen extends StatelessWidget {
             Settle(
               index: 10,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Btn('Get started', expand: true, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SignInScreen()))),
+                Btn('Get started', expand: true, onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const SignInScreen()))),
                 const SizedBox(height: 6),
                 Btn('Look around with sample data',
                     kind: BtnKind.plain,
                     expand: true,
-                    onTap: () => Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const HomeScreen()), (_) => false)),
+                    onTap: () => Navigator.of(context).pushAndRemoveUntil(CupertinoPageRoute(builder: (_) => const HomeScreen()), (_) => false)),
               ]),
             ),
           ]),

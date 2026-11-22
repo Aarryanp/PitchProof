@@ -59,10 +59,6 @@ ThemeData buildTheme() {
     textTheme: text,
     splashFactory: NoSplash.splashFactory, // we use our own press feel
     highlightColor: Colors.transparent,
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-    }),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: C.card,

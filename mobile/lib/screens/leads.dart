@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
@@ -26,7 +27,7 @@ class LeadsScreenState extends State<LeadsScreen> {
   void reload() => setState(() => _data = Repo.leads());
 
   Future<void> _open(Lead l) async {
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => PitchScreen(id: l.pitchId!)));
+    await Navigator.of(context).push(CupertinoPageRoute(builder: (_) => PitchScreen(id: l.pitchId!)));
     reload();
   }
 
@@ -90,7 +91,7 @@ class LeadsScreenState extends State<LeadsScreen> {
             color: C.primary,
             padding: const EdgeInsets.all(16),
             onTap: () async {
-              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OnboardingScreen(editing: true)));
+              await Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const OnboardingScreen(editing: true)));
               reload();
             },
             child: Row(children: [

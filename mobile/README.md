@@ -6,7 +6,7 @@ The agent steps and the company pages (`/p/...`) stay on the Next.js server.
 
 ## Run it on your phone
 
-Written and tested with Flutter 3.38.0 (the version the GitHub build uses).
+Built and tested with Flutter 3.44.0 (the version on the Mac and in the GitHub build). Needs Xcode with iOS 15 or later.
 
 
 1. Copy `env.example.json` to `env.json` and fill in the two values from
