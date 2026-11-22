@@ -121,3 +121,11 @@ For each part, write:
 **Library:** `shared_preferences` (saves small values on the phone). It was already in the app through Supabase, which uses it to keep you signed in. Now it is listed directly.
 
 **How to test:** open Leads, close the app, turn on airplane mode and open it again: your last leads show. Pull down on any list to reload it.
+
+## Longer list of business types (22 Nov)
+
+**What changed:** the business type list in Search now has 22 types in two groups. **Tech and online** covers tech startups, IT services and software agencies, SaaS, e-commerce and D2C brands, edtech, fintech, and marketing and design agencies. **Local businesses** covers clinics, dentists, cafes, salons, gyms, coaching institutes, schools, real estate, CA firms, law firms, hotels, travel agencies, architects, event planners and retail shops. A search box at the top filters the list, and "Other" is at the end.
+
+**How the search will use it:** `lib/business-types.ts` matches each type to the industry names Crustdata uses (LinkedIn's, both old and new names), plus an extra keyword where needed (dentists are filed under "Medical Practices", so we also look for "dental"). "Other" falls back to a web search. Before the find step goes live, each industry name gets checked with Crustdata's free autocomplete, so no credits are spent.
+
+**Files:** `lib/business-types.ts` (new), `mobile/lib/data/models.dart` (`businessGroups`), `mobile/lib/screens/search.dart`.

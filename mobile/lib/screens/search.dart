@@ -17,11 +17,12 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   String skill = 'web';
-  String type = businessTypes.first;
+  String type = businessGroups.first.types.first;
   final _sector = TextEditingController();
   String get _sectorText => type == 'Other' ? _sector.text.trim() : type;
 
-  /// Opens a list of business types from the bottom of the screen.
+  /// Opens a list of business types from the bottom of the screen, in
+  /// groups, with a box at the top to filter it.
   Future<void> _pickType() async {
     FocusScope.of(context).unfocus();
     final picked = await showModalBottomSheet<String>(
@@ -30,30 +31,11 @@ class _SearchScreenState extends State<SearchScreen> {
       showDragHandle: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (context) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-          child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), children: [
-            Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: Text('Type of business', style: T.h2)),
-            for (final t in [...businessTypes, 'Other'])
-              Pressable(
-                scale: 0.98,
-                onTap: () => Navigator.of(context).pop(t),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-                  decoration: BoxDecoration(color: t == type ? C.primarySoft : null, borderRadius: BorderRadius.circular(14)),
-                  child: Row(children: [
-                    Expanded(child: Text(t, style: T.h3.copyWith(color: t == type ? C.primary : C.fg))),
-                    if (t == type) const Icon(Icons.check_rounded, color: C.primary, size: 20),
-                  ]),
-                ),
-              ),
-          ]),
-        ),
-      ),
+      builder: (_) => _TypePicker(current: type),
     );
     if (picked != null) setState(() => type = picked);
   }
+
   final _city = TextEditingController(text: 'Nagpur');
   double count = 10;
   bool busy = false;
@@ -217,6 +199,67 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TypePicker extends StatefulWidget {
+  const _TypePicker({required this.current});
+  final String current;
+  @override
+  State<_TypePicker> createState() => _TypePickerState();
+}
+
+class _TypePickerState extends State<_TypePicker> {
+  String q = '';
+
+  Widget _row(String t) => Pressable(
+        scale: 0.98,
+        onTap: () => Navigator.of(context).pop(t),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(color: t == widget.current ? C.primarySoft : null, borderRadius: BorderRadius.circular(14)),
+          child: Row(children: [
+            Expanded(child: Text(t, style: T.h3.copyWith(color: t == widget.current ? C.primary : C.fg))),
+            if (t == widget.current) const Icon(Icons.check_rounded, color: C.primary, size: 20),
+          ]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final query = q.trim().toLowerCase();
+    return Padding(
+      padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
+      child: SizedBox(
+        height: mq.size.height * 0.78,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(S.page, 0, S.page, 8),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Type of business', style: T.h2),
+              const SizedBox(height: 12),
+              TextField(
+                onChanged: (v) => setState(() => q = v),
+                decoration: const InputDecoration(hintText: 'Search, e.g. SaaS or salons', prefixIcon: Icon(Icons.search_rounded, color: C.muted)),
+              ),
+            ]),
+          ),
+          Expanded(
+            child: ListView(padding: EdgeInsets.fromLTRB(8, 4, 8, mq.padding.bottom + 12), children: [
+              for (final g in businessGroups) ...[
+                if (g.types.any((t) => t.toLowerCase().contains(query))) ...[
+                  Padding(padding: const EdgeInsets.fromLTRB(14, 14, 14, 6), child: Text(g.name.toUpperCase(), style: T.tiny)),
+                  for (final t in g.types.where((t) => t.toLowerCase().contains(query))) _row(t),
+                ],
+              ],
+              const Padding(padding: EdgeInsets.fromLTRB(14, 14, 14, 6), child: Divider(height: 1, color: C.line)),
+              _row('Other'),
+            ]),
+          ),
+        ]),
       ),
     );
   }

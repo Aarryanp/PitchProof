@@ -195,5 +195,13 @@ const skillOptions = [
 
 String skillName(String key) => skillOptions.where((s) => s.key == key).firstOrNull?.name ?? key;
 
-/// Types of business to pick from in a search. "Other" opens a text box.
-const businessTypes = ['Clinics', 'Dental clinics', 'Cafes and restaurants', 'Salons and spas', 'Gyms and fitness', 'Coaching classes', 'Hotels', 'Real estate', 'Retail shops'];
+/// Types of business to pick from in a search, in two groups. "Other"
+/// opens a text box. The web server maps each label to a Crustdata search
+/// (lib/business-types.ts), so keep the two lists the same.
+const businessGroups = [
+  (name: 'Tech and online', types: ['Tech startups', 'IT services and software agencies', 'SaaS and software products', 'E-commerce and D2C brands', 'Edtech', 'Fintech', 'Marketing and design agencies']),
+  (
+    name: 'Local businesses',
+    types: ['Clinics and hospitals', 'Dental clinics', 'Cafes and restaurants', 'Salons and spas', 'Gyms and fitness', 'Coaching institutes', 'Schools', 'Real estate', 'CA and accounting firms', 'Law firms', 'Hotels', 'Travel agencies', 'Architects and interior designers', 'Event planners', 'Retail shops'],
+  ),
+];
