@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/models.dart';
 import '../data/repo.dart';
 import '../theme.dart';
+import '../widgets/refresh_list.dart';
 import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
@@ -18,38 +19,34 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   late Future<Loaded<Results>> _data = Repo.results();
+  final _cached = Repo.cachedResults();
 
   void _openList(String title, List<SentPitch> list) =>
       Navigator.of(context).push(CupertinoPageRoute(builder: (_) => _CompanyListScreen(title: title, pitches: list)));
 
   @override
   Widget build(BuildContext context) {
-    final pad = MediaQuery.of(context).padding;
     return Scaffold(
-      body: RefreshIndicator(
-        color: C.primary,
-        onRefresh: () async {
-          setState(() {
-            _data = Repo.results();
-          });
-          await _data;
-        },
-        child: FutureBuilder(
-          future: _data,
-          builder: (context, snap) => ListView(
-            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-            padding: EdgeInsets.fromLTRB(S.page, pad.top + 16, S.page, pad.bottom + 110),
-            children: [
-              const ScreenTitle('Results', subtitle: 'How your emails are doing.'),
-              const SizedBox(height: 18),
-              if (snap.hasError)
-                Text('Could not load results: ${snap.error}', style: const TextStyle(color: C.danger))
-              else if (!snap.hasData)
-                const ListSkeleton(rows: 2)
-              else
-                ..._content(snap.data!.value),
-            ],
-          ),
+      body: FutureBuilder(
+        future: _data,
+        initialData: _cached,
+        builder: (context, snap) => RefreshList(
+          onRefresh: () async {
+            setState(() {
+              _data = Repo.results();
+            });
+            await _data;
+          },
+          children: [
+            const ScreenTitle('Results', subtitle: 'How your emails are doing.'),
+            const SizedBox(height: 18),
+            if (snap.hasError)
+              Text('Could not load results: ${snap.error}', style: const TextStyle(color: C.danger))
+            else if (!snap.hasData)
+              const ListSkeleton(rows: 2)
+            else
+              ..._content(snap.data!.value),
+          ],
         ),
       ),
     );

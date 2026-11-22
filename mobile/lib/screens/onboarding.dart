@@ -40,49 +40,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  List<({String title, String hint, Widget body, bool ok})> get steps => [
-        (title: "What's your name?", hint: 'Companies see this on the page made for them.', ok: _name.text.trim().isNotEmpty, body: _field(_name, 'Your name')),
+  /// Each step: its question, a hint, the answer widget, whether Continue
+  /// is allowed, and [optional] steps get a "Do this later" button.
+  List<({String title, String hint, Widget body, bool ok, bool optional})> get steps => [
+        (title: "What's your name?", hint: 'Companies see this on the page made for them.', ok: _name.text.trim().isNotEmpty, optional: false, body: _field(_name, 'Your name')),
         (
           title: 'Where are you based?',
           hint: 'The agent looks for businesses near you first.',
           ok: _city.text.trim().isNotEmpty,
+          optional: false,
           body: Column(children: [_field(_city, 'City, e.g. Nagpur'), const SizedBox(height: S.gap), _field(_year, 'Year, e.g. 3rd year or graduate')]),
         ),
         (
-          title: 'What are you hoping for?',
-          hint: 'This changes how your emails ask.',
-          ok: s.goal != null,
-          body: Column(children: [
-            for (final g in const [('freelance', Icons.work_outline_rounded, 'Paid projects', 'Small jobs you get paid for'), ('internship', Icons.school_outlined, 'An internship', 'Work with a company for a few months'), ('job', Icons.badge_outlined, 'A job', 'A full-time role after college')])
-              Padding(
-                padding: const EdgeInsets.only(bottom: S.gap),
-                child: _Choice(icon: g.$2, label: g.$3, hint: g.$4, selected: s.goal == g.$1, onTap: () => setState(() => s.goal = g.$1)),
-              ),
-          ]),
-        ),
-        (
           title: 'What can you do?',
-          hint: 'Pick one or both. The agent only pitches what you can deliver.',
+          hint: 'Pick as many as you like. The agent only pitches what you can deliver.',
           ok: s.skills.isNotEmpty,
+          optional: false,
           body: Column(children: [
-            for (final k in const [('web', Icons.code_rounded, 'Web development', 'Fix slow or broken sites, build new pages'), ('design', Icons.palette_outlined, 'Design', 'Logos, colours, layouts, social posts')])
+            for (final k in skillOptions)
               Padding(
                 padding: const EdgeInsets.only(bottom: S.gap),
                 child: _Choice(
-                  icon: k.$2,
-                  label: k.$3,
-                  hint: k.$4,
-                  selected: s.skills.contains(k.$1),
-                  onTap: () => setState(() => s.skills.contains(k.$1) ? s.skills.remove(k.$1) : s.skills.add(k.$1)),
+                  icon: skillIcon(k.key),
+                  label: k.name,
+                  hint: k.hint,
+                  selected: s.skills.contains(k.key),
+                  onTap: () => setState(() => s.skills.contains(k.key) ? s.skills.remove(k.key) : s.skills.add(k.key)),
                 ),
               ),
           ]),
         ),
-        (title: 'One line about you', hint: 'Shown on the company page, under your name.', ok: _bio.text.trim().isNotEmpty, body: _field(_bio, 'e.g. CS student who builds fast sites for small businesses', lines: 3)),
+        (title: 'One line about you', hint: 'Shown on the company page, under your name.', ok: _bio.text.trim().isNotEmpty, optional: true, body: _field(_bio, 'e.g. CS student who builds fast sites for small businesses', lines: 3)),
         (
           title: 'Things you have made',
           hint: 'Two or three is plenty. Companies see these.',
           ok: projects.any((p) => p.title.trim().isNotEmpty),
+          optional: true,
           body: Column(children: [
             for (var i = 0; i < projects.length; i++) Padding(padding: const EdgeInsets.only(bottom: S.gap), child: _ProjectCard(key: ObjectKey(projects[i]), p: projects[i], onChanged: () => setState(() {}), onRemove: projects.length > 1 ? () => setState(() => projects.removeAt(i)) : null)),
             if (projects.length < 3) Btn('Add another', icon: Icons.add_rounded, kind: BtnKind.soft, big: false, onTap: () => setState(() => projects.add(Project()))),
@@ -92,6 +85,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           title: 'How do you write?',
           hint: 'Paste two short messages you wrote to anyone. Emails will sound like you.',
           ok: _voice1.text.trim().isNotEmpty,
+          optional: true,
           body: Column(children: [_field(_voice1, 'A message you sent', lines: 3), const SizedBox(height: S.gap), _field(_voice2, 'Another one (optional)', lines: 3)]),
         ),
       ];
@@ -235,7 +229,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(S.page, 0, S.page, 12),
-              child: Btn(last ? (widget.editing ? 'Save' : 'Finish') : 'Continue', expand: true, busy: saving, onTap: cur.ok ? _next : null),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Btn(last ? (widget.editing ? 'Save' : 'Finish') : 'Continue', expand: true, busy: saving, onTap: cur.ok ? _next : null),
+                // Optional steps can be skipped now and filled in later from Me.
+                AnimatedSize(
+                  duration: M.fast,
+                  child: cur.optional && !cur.ok
+                      ? Padding(padding: const EdgeInsets.only(top: 4), child: Btn('Do this later', kind: BtnKind.plain, expand: true, onTap: saving ? null : _next))
+                      : const SizedBox(width: double.infinity),
+                ),
+              ]),
             ),
           ]),
         ),
@@ -244,7 +247,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// A big tappable option card with an icon, used for goal and skills.
+/// A big tappable option card with an icon, used for skills.
 class _Choice extends StatelessWidget {
   const _Choice({required this.icon, required this.label, required this.hint, required this.selected, required this.onTap});
   final IconData icon;
@@ -304,8 +307,8 @@ class _ProjectCard extends StatelessWidget {
           const SizedBox(height: 10),
           TextFormField(initialValue: p.link, keyboardType: TextInputType.url, decoration: const InputDecoration(hintText: 'Link (optional)'), onChanged: (v) => p.link = v),
           const SizedBox(height: 10),
-          Row(children: [
-            for (final t in const ['web', 'design']) ...[
+          Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            for (final t in skillOptions.map((o) => o.key)) ...[
               Pressable(
                 onTap: () {
                   p.skillTag = t;
@@ -315,12 +318,10 @@ class _ProjectCard extends StatelessWidget {
                   duration: M.fast,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(color: p.skillTag == t ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
-                  child: Text(t == 'web' ? 'Web' : 'Design', style: TextStyle(color: p.skillTag == t ? Colors.white : C.fg, fontWeight: FontWeight.w700, fontSize: 13)),
+                  child: Text(const {'web': 'Web', 'design': 'Design', 'seo': 'SEO', 'chatbot': 'Chatbot'}[t]!, style: TextStyle(color: p.skillTag == t ? Colors.white : C.fg, fontWeight: FontWeight.w700, fontSize: 13)),
                 ),
               ),
-              const SizedBox(width: 8),
             ],
-            const Spacer(),
             if (onRemove != null) Btn('Remove', icon: Icons.delete_outline_rounded, kind: BtnKind.plain, big: false, onTap: onRemove),
           ]),
         ]),

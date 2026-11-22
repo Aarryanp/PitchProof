@@ -6,6 +6,7 @@ import '../data/repo.dart';
 import '../main.dart';
 import '../theme.dart';
 import '../widgets/pressable.dart';
+import '../widgets/refresh_list.dart';
 import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
@@ -24,12 +25,14 @@ class MeScreen extends StatefulWidget {
 
 class _MeScreenState extends State<MeScreen> {
   late Future<Loaded<(Student, List<Project>)>> _data = Repo.profile();
+  final _cached = Repo.cachedProfile();
 
   void _reload() => setState(() {
         _data = Repo.profile();
       });
 
   Future<void> _signOut() async {
+    await Cache.clear();
     if (hasBackend) await Supabase.instance.client.auth.signOut();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(fadeRoute(const WelcomeScreen()), (_) => false);
@@ -41,11 +44,17 @@ class _MeScreenState extends State<MeScreen> {
     return Scaffold(
       body: FutureBuilder(
         future: _data,
-        builder: (context, snap) => ListView(
-          padding: EdgeInsets.only(bottom: pad.bottom + 110),
+        initialData: _cached,
+        builder: (context, snap) => RefreshList(
+          top: snap.hasData ? -1 : 16,
+          padding: EdgeInsets.zero,
+          onRefresh: () async {
+            _reload();
+            await _data;
+          },
           children: [
             if (!snap.hasData)
-              Padding(padding: EdgeInsets.fromLTRB(S.page, pad.top + 16, S.page, 0), child: const ListSkeleton(rows: 2))
+              const Padding(padding: EdgeInsets.symmetric(horizontal: S.page), child: ListSkeleton(rows: 2))
             else ...[
               _header(snap.data!.value.$1, pad.top),
               Padding(
@@ -98,7 +107,7 @@ class _MeScreenState extends State<MeScreen> {
             const SizedBox(height: 14),
             Wrap(spacing: 8, runSpacing: 8, children: [
               if (goal != null) Pill(goal),
-              for (final k in s.skills) Pill(k == 'web' ? 'Web development' : 'Design', bg: C.card, fg: C.fg),
+              for (final k in s.skills) Pill(skillName(k), bg: C.card, fg: C.fg),
             ]),
           ]),
         ),
@@ -126,7 +135,7 @@ class _MeScreenState extends State<MeScreen> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(12)),
-                    child: Icon(p.skillTag == 'design' ? Icons.palette_outlined : Icons.code_rounded, size: 19),
+                    child: Icon(skillIcon(p.skillTag), size: 19),
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p.title, style: T.h3), if (p.oneLine.isNotEmpty) Text(p.oneLine, style: T.small)])),

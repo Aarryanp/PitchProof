@@ -4,6 +4,7 @@ import '../data/models.dart';
 import '../data/repo.dart';
 import '../theme.dart';
 import '../widgets/pressable.dart';
+import '../widgets/refresh_list.dart';
 import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
@@ -22,6 +23,7 @@ class LeadsScreen extends StatefulWidget {
 
 class LeadsScreenState extends State<LeadsScreen> {
   late Future<({Loaded<List<Lead>> leads, bool signedIn, bool hasProfile})> _data = Repo.leads();
+  final _cached = Repo.cachedLeads();
   bool _showSkipped = false;
 
   void reload() => setState(() {
@@ -35,7 +37,6 @@ class LeadsScreenState extends State<LeadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
     return Scaffold(
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 78),
@@ -49,32 +50,26 @@ class LeadsScreenState extends State<LeadsScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        color: C.primary,
-        onRefresh: () async {
-          reload();
-          await _data;
-        },
-        child: FutureBuilder(
-          future: _data,
-          builder: (context, snap) {
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-              padding: EdgeInsets.fromLTRB(S.page, MediaQuery.of(context).padding.top + 16, S.page, bottom + 110),
-              children: [
-                const ScreenTitle('Leads', subtitle: 'Businesses the agent found.'),
-                const SizedBox(height: 18),
-                AnimatedSwitcher(
-                  duration: M.normal,
-                  child: snap.hasError
-                      ? Text('Could not load leads: ${snap.error}', style: const TextStyle(color: C.danger))
-                      : !snap.hasData
-                          ? const ListSkeleton()
-                          : _content(snap.data!),
-                ),
-              ],
-            );
+      body: FutureBuilder(
+        future: _data,
+        initialData: _cached,
+        builder: (context, snap) => RefreshList(
+          onRefresh: () async {
+            reload();
+            await _data;
           },
+          children: [
+            const ScreenTitle('Leads', subtitle: 'Businesses the agent found.'),
+            const SizedBox(height: 18),
+            AnimatedSwitcher(
+              duration: M.normal,
+              child: snap.hasError
+                  ? Text('Could not load leads: ${snap.error}', style: const TextStyle(color: C.danger))
+                  : !snap.hasData
+                      ? const ListSkeleton()
+                      : _content(snap.data!),
+            ),
+          ],
         ),
       ),
     );

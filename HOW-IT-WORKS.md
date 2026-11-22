@@ -106,3 +106,18 @@ For each part, write:
 **Files:** `mobile/lib/screens/leads.dart`, `results.dart`, `search.dart`, `me.dart`, `mobile/lib/data/models.dart` (new `Outcome` and `SentPitch`), `mobile/lib/data/repo.dart` (Results now reads each emailed company with its page views and replies), `mobile/lib/data/sample_data.dart`.
 
 **How to test:** run the app, sign in, and open each tab. "Look around with sample data" on the Welcome screen still shows made-up businesses, without the banner.
+
+## Phone app: easier setup, more services, quick loading (22 Nov)
+
+**What changed:**
+- **Services:** you can now offer Web development, Design, SEO and marketing, and AI chatbots (the skill packs from the plan; SEO and chatbots reuse the same website scan). In setup you can pick as many as you like. In a search you pick one, because each search runs one skill pack.
+- **Type of business** in Search is now a list you tap to choose from. Picking "Other" opens a box where you type your own.
+- **Setup is shorter:** the "What are you hoping for" question is gone. "One line about you", "Things you have made" and "How do you write" each have a "Do this later" button. You can fill them in later from Me → Edit profile.
+- **Pull to refresh** now uses the iPhone-style spinner and really reloads, on Leads, Results and Me.
+- **Quick loading:** the phone keeps a copy of the last leads, results and profile it loaded. A screen shows that copy straight away, then swaps in fresh data from Supabase. It is wiped when you sign out. This is not offline mode: changes still need the internet.
+
+**Files:** `mobile/lib/screens/onboarding.dart`, `search.dart`, `leads.dart`, `results.dart`, `me.dart`, `mobile/lib/widgets/refresh_list.dart` (new), `mobile/lib/data/repo.dart` (the `Cache` class), `mobile/lib/data/models.dart` (`skillOptions`, `businessTypes`), `mobile/pubspec.yaml`.
+
+**Library:** `shared_preferences` (saves small values on the phone). It was already in the app through Supabase, which uses it to keep you signed in. Now it is listed directly.
+
+**How to test:** open Leads, close the app, turn on airplane mode and open it again: your last leads show. Pull down on any list to reload it.

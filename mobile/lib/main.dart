@@ -15,6 +15,7 @@ Future<void> main() async {
   if (_url.isNotEmpty && _key.isNotEmpty) {
     await Supabase.initialize(url: _url, publishableKey: _key);
     hasBackend = true;
+    await Cache.init();
   }
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,

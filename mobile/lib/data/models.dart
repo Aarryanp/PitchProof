@@ -182,3 +182,18 @@ class Loaded<T> {
   final T value;
   final bool sample;
 }
+
+/// The services a student can offer. Each one is a skill pack: its own
+/// website checks, fix and email style. Web and design come first; SEO and
+/// chatbots reuse the same website scan.
+const skillOptions = [
+  (key: 'web', name: 'Web development', hint: 'Fix slow or broken sites, build new pages'),
+  (key: 'design', name: 'Design', hint: 'Logos, colours, layouts, social posts'),
+  (key: 'seo', name: 'SEO and marketing', hint: 'Help businesses show up on Google'),
+  (key: 'chatbot', name: 'AI chatbots', hint: 'A bot that answers customer questions'),
+];
+
+String skillName(String key) => skillOptions.where((s) => s.key == key).firstOrNull?.name ?? key;
+
+/// Types of business to pick from in a search. "Other" opens a text box.
+const businessTypes = ['Clinics', 'Dental clinics', 'Cafes and restaurants', 'Salons and spas', 'Gyms and fitness', 'Coaching classes', 'Hotels', 'Real estate', 'Retail shops'];

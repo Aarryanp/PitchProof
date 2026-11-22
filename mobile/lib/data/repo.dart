@@ -2,6 +2,9 @@
 // signed-in student only ever sees and changes their own rows.
 // When there is nothing real yet, screens get sample data (marked sample).
 
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models.dart';
 import 'pitch_rules.dart';
@@ -16,6 +19,45 @@ bool hasBackend = false;
 /// The signed-in user's id, or null.
 String? get userId => hasBackend ? _db.auth.currentUser?.id : null;
 String? get userEmail => hasBackend ? _db.auth.currentUser?.email : null;
+
+typedef Rows = List<Map<String, dynamic>>;
+
+/// A small copy, on the phone, of the last rows each screen loaded. A
+/// screen shows it straight away when it opens, then swaps in fresh data
+/// from Supabase. Kept per user, and wiped on sign out. Not offline sync:
+/// changes still need the internet.
+class Cache {
+  static SharedPreferences? _prefs;
+  static Future<void> init() async {
+    try {
+      _prefs = await SharedPreferences.getInstance();
+    } catch (_) {}
+  }
+
+  static String _key(String name) => 'cache.$userId.$name';
+
+  static List<Rows>? read(String name) {
+    if (userId == null) return null;
+    try {
+      final raw = _prefs?.getString(_key(name));
+      if (raw == null) return null;
+      return [for (final list in jsonDecode(raw) as List) [for (final row in list as List) Map<String, dynamic>.from(row as Map)]];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static void write(String name, List<Rows> rows) {
+    if (userId == null) return;
+    _prefs?.setString(_key(name), jsonEncode(rows));
+  }
+
+  static Future<void> clear() async {
+    for (final k in _prefs?.getKeys().where((k) => k.startsWith('cache.')).toList() ?? const <String>[]) {
+      await _prefs?.remove(k);
+    }
+  }
+}
 
 class Repo {
   static Future<Student?> myStudent() async {
@@ -34,6 +76,17 @@ class Repo {
       _db.from('pitches').select('id, company_id, status').eq('student_id', id),
       _db.from('students').select('id').eq('id', id),
     ]);
+    Cache.write('leads', results);
+    return _buildLeads(results);
+  }
+
+  /// The leads saved on the phone last time, or null.
+  static ({Loaded<List<Lead>> leads, bool signedIn, bool hasProfile})? cachedLeads() {
+    final rows = Cache.read('leads');
+    return rows == null || rows.length != 4 ? null : _buildLeads(rows);
+  }
+
+  static ({Loaded<List<Lead>> leads, bool signedIn, bool hasProfile}) _buildLeads(List<Rows> results) {
     final companies = results[0], audits = results[1], pitches = results[2];
     final hasProfile = results[3].isNotEmpty;
     if (companies.isEmpty) return (leads: const Loaded(<Lead>[]), signedIn: true, hasProfile: hasProfile);
@@ -124,6 +177,16 @@ class Repo {
       _db.from('page_views').select('pitch_id'),
       _db.from('messages').select('pitch_id, reply_label').eq('kind', 'reply'),
     ]);
+    Cache.write('results', r);
+    return _buildResults(r);
+  }
+
+  static Loaded<Results>? cachedResults() {
+    final rows = Cache.read('results');
+    return rows == null || rows.length != 3 ? null : _buildResults(rows);
+  }
+
+  static Loaded<Results> _buildResults(List<Rows> r) {
     final opened = r[1].map((v) => v['pitch_id']).toSet();
     final replies = {for (final m in r[2]) m['pitch_id']: m['reply_label']};
     final list = r[0].map((p) {
@@ -145,10 +208,23 @@ class Repo {
   static Future<Loaded<(Student, List<Project>)>> profile() async {
     final id = userId;
     if (id == null) return Loaded((sampleStudent(), sampleProjects()), sample: true);
-    final s = await myStudent();
-    final items = await _db.from('portfolio_items').select('title, skill_tag, link, one_line').eq('student_id', id).order('created_at');
+    final r = await Future.wait([
+      _db.from('students').select().eq('id', id),
+      _db.from('portfolio_items').select('title, skill_tag, link, one_line').eq('student_id', id).order('created_at'),
+    ]);
+    Cache.write('profile', r);
+    return _buildProfile(r);
+  }
+
+  static Loaded<(Student, List<Project>)>? cachedProfile() {
+    final rows = Cache.read('profile');
+    return rows == null || rows.length != 2 ? null : _buildProfile(rows);
+  }
+
+  static Loaded<(Student, List<Project>)> _buildProfile(List<Rows> r) {
+    final items = r[1];
     return Loaded((
-      s ?? Student(),
+      r[0].isEmpty ? Student() : Student.fromJson(r[0].first),
       items.map((i) => Project(title: '${i['title'] ?? ''}', skillTag: '${i['skill_tag'] ?? 'web'}', oneLine: '${i['one_line'] ?? ''}', link: '${i['link'] ?? ''}')).toList(),
     ));
   }

@@ -172,3 +172,11 @@ class ScreenTitle extends StatelessWidget {
         ?trailing,
       ]);
 }
+
+/// Icon for each service a student can offer.
+IconData skillIcon(String key) => switch (key) {
+      'design' => Icons.palette_outlined,
+      'seo' => Icons.trending_up_rounded,
+      'chatbot' => Icons.smart_toy_outlined,
+      _ => Icons.code_rounded,
+    };

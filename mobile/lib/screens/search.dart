@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/models.dart';
 import '../data/repo.dart';
 import '../theme.dart';
 import '../widgets/pressable.dart';
@@ -16,7 +17,43 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   String skill = 'web';
-  final _sector = TextEditingController(text: 'Clinics');
+  String type = businessTypes.first;
+  final _sector = TextEditingController();
+  String get _sectorText => type == 'Other' ? _sector.text.trim() : type;
+
+  /// Opens a list of business types from the bottom of the screen.
+  Future<void> _pickType() async {
+    FocusScope.of(context).unfocus();
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: C.card,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (context) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: ListView(shrinkWrap: true, padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), children: [
+            Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: Text('Type of business', style: T.h2)),
+            for (final t in [...businessTypes, 'Other'])
+              Pressable(
+                scale: 0.98,
+                onTap: () => Navigator.of(context).pop(t),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+                  decoration: BoxDecoration(color: t == type ? C.primarySoft : null, borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: [
+                    Expanded(child: Text(t, style: T.h3.copyWith(color: t == type ? C.primary : C.fg))),
+                    if (t == type) const Icon(Icons.check_rounded, color: C.primary, size: 20),
+                  ]),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
+    if (picked != null) setState(() => type = picked);
+  }
   final _city = TextEditingController(text: 'Nagpur');
   double count = 10;
   bool busy = false;
@@ -30,10 +67,10 @@ class _SearchScreenState extends State<SearchScreen> {
       note = null;
     });
     try {
-      await Repo.saveSearch(skill: skill, sector: _sector.text, city: _city.text, count: count.round());
+      await Repo.saveSearch(skill: skill, sector: _sectorText, city: _city.text, count: count.round());
       setState(() {
         ok = true;
-        note = '${count.round()} ${_sector.text.trim().toLowerCase()} in ${_city.text.trim()}. The agent steps are not connected to the app yet, so the next steps wait.';
+        note = '${count.round()} ${_sectorText.toLowerCase()} in ${_city.text.trim()}. The agent steps are not connected to the app yet, so the next steps wait.';
       });
     } catch (e) {
       setState(() {
@@ -58,30 +95,49 @@ class _SearchScreenState extends State<SearchScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text('What can you offer?', style: T.h3),
                 const SizedBox(height: 10),
-                Row(children: [
-                  for (final (k, label, icon) in const [('web', 'Web', Icons.code_rounded), ('design', 'Design', Icons.palette_outlined)]) ...[
-                    Expanded(
-                      child: Pressable(
-                        onTap: () => setState(() => skill = k),
-                        child: AnimatedContainer(
-                          duration: M.fast,
-                          height: 48,
-                          decoration: BoxDecoration(color: skill == k ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
-                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Icon(icon, size: 18, color: skill == k ? Colors.white : C.fg),
-                            const SizedBox(width: 6),
-                            Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: skill == k ? Colors.white : C.fg)),
-                          ]),
-                        ),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final o in skillOptions)
+                    Pressable(
+                      onTap: () => setState(() => skill = o.key),
+                      child: AnimatedContainer(
+                        duration: M.fast,
+                        height: 44,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(color: skill == o.key ? C.ink : C.bg, borderRadius: BorderRadius.circular(999)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(skillIcon(o.key), size: 18, color: skill == o.key ? Colors.white : C.fg),
+                          const SizedBox(width: 6),
+                          Text(o.name, style: TextStyle(fontWeight: FontWeight.w700, color: skill == o.key ? Colors.white : C.fg)),
+                        ]),
                       ),
                     ),
-                    if (k == 'web') const SizedBox(width: 10),
-                  ],
                 ]),
                 const SizedBox(height: 18),
                 Text('Type of business', style: T.h3),
                 const SizedBox(height: 8),
-                TextField(controller: _sector, decoration: const InputDecoration(hintText: 'e.g. Clinics, cafes, coaching classes')),
+                Pressable(
+                  scale: 0.98,
+                  onTap: _pickType,
+                  child: Container(
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(16), border: Border.all(color: C.line)),
+                    child: Row(children: [
+                      Expanded(child: Text(type, style: T.body.copyWith(fontWeight: FontWeight.w600))),
+                      const Icon(Icons.expand_more_rounded, color: C.muted),
+                    ]),
+                  ),
+                ),
+                AnimatedSize(
+                  duration: M.normal,
+                  curve: M.ease,
+                  child: type != 'Other'
+                      ? const SizedBox(width: double.infinity)
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: TextField(controller: _sector, autofocus: true, textCapitalization: TextCapitalization.sentences, decoration: const InputDecoration(hintText: 'Type it, e.g. Pet shops')),
+                        ),
+                ),
                 const SizedBox(height: 18),
                 Text('City', style: T.h3),
                 const SizedBox(height: 8),
