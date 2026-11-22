@@ -129,3 +129,20 @@ For each part, write:
 **How the search will use it:** `lib/business-types.ts` matches each type to the industry names Crustdata uses (LinkedIn's, both old and new names), plus an extra keyword where needed (dentists are filed under "Medical Practices", so we also look for "dental"). "Other" falls back to a web search. Before the find step goes live, each industry name gets checked with Crustdata's free autocomplete, so no credits are spent.
 
 **Files:** `lib/business-types.ts` (new), `mobile/lib/data/models.dart` (`businessGroups`), `mobile/lib/screens/search.dart`.
+
+## Me: photo, notifications, privacy, delete account (22 Nov)
+
+**What changed:**
+- **More services:** Content writing, Social media, Video editing and App development join web, design, SEO and chatbots. Until their website checks exist, these are pitched from your own projects. Search now lets you pick more than one; they are saved together in `searches.skill_type` as "web,seo".
+- **Profile photo:** tap your picture on Me to choose a photo, take one, or remove it. With no photo, your Google picture shows; with neither, your first letter does. Photos go to the Supabase Storage folder `avatars/<your id>/`, which anyone can view (companies see it) but only you can change.
+- **Notifications:** pick which alerts you want (emails to approve, replies, page opened, daily summary). Saved on the phone for now; alerts start once the n8n daily job is connected.
+- **Privacy policy:** a plain-words page in the app.
+- **Delete account:** at the bottom of Me. After you confirm, the database function `delete_my_account()` deletes your sign-in, which also deletes everything linked to you (profile, projects, searches, leads, drafts, emails, photos). Companies you found become free for other students.
+- **Pull to refresh** is fixed on the iPhone. The spinner must be the first thing in the list, and it wasn't. A new test (`mobile/test/refresh_list_test.dart`) pulls the list down and checks that it reloads.
+- **Ripple:** buttons, cards and chips now show a soft ripple from where your finger touched, along with the small shrink. The tab bar keeps its own animation.
+
+**Database:** the SQL is at the end of `supabase/schema.sql` (function plus the `avatars` bucket and its rules).
+
+**Library:** `image_picker` (picks or takes a photo). The iPhone asks for permission the first time, with the reason shown in `ios/Runner/Info.plist`.
+
+**Files:** `mobile/lib/screens/me.dart`, `settings.dart` (new: notifications and privacy), `search.dart`, `mobile/lib/widgets/pressable.dart`, `refresh_list.dart`, `ui.dart`, `mobile/lib/data/repo.dart`, `models.dart`.

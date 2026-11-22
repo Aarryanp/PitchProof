@@ -3,6 +3,7 @@
 // When there is nothing real yet, screens get sample data (marked sample).
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,6 +20,12 @@ bool hasBackend = false;
 /// The signed-in user's id, or null.
 String? get userId => hasBackend ? _db.auth.currentUser?.id : null;
 String? get userEmail => hasBackend ? _db.auth.currentUser?.email : null;
+
+/// The picture from the Google account you signed in with, if any.
+String? get googlePhoto {
+  final m = hasBackend ? _db.auth.currentUser?.userMetadata : null;
+  return (m?['avatar_url'] ?? m?['picture']) as String?;
+}
 
 typedef Rows = List<Map<String, dynamic>>;
 
@@ -254,11 +261,46 @@ class Repo {
     if (rows.isNotEmpty) await _db.from('portfolio_items').insert(rows.toList());
   }
 
+  /// Uploads a new profile photo to `avatars/<user id>/` and saves its link.
+  /// The file name changes each time so phones don't show an old copy.
+  static Future<String> uploadPhoto(Uint8List bytes, String ext) async {
+    final id = userId;
+    if (id == null) throw Exception('Sign in first.');
+    final old = await _db.storage.from('avatars').list(path: id);
+    final path = '$id/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    await _db.storage.from('avatars').uploadBinary(path, bytes, fileOptions: FileOptions(contentType: 'image/${ext == 'jpg' ? 'jpeg' : ext}'));
+    if (old.isNotEmpty) await _db.storage.from('avatars').remove([for (final f in old) '$id/${f.name}']);
+    final url = _db.storage.from('avatars').getPublicUrl(path);
+    await _db.from('students').update({'photo_url': url}).eq('id', id);
+    return url;
+  }
+
+  /// Removes the uploaded photo. Your Google picture shows again, if you have one.
+  static Future<void> removePhoto() async {
+    final id = userId;
+    if (id == null) return;
+    final old = await _db.storage.from('avatars').list(path: id);
+    if (old.isNotEmpty) await _db.storage.from('avatars').remove([for (final f in old) '$id/${f.name}']);
+    await _db.from('students').update({'photo_url': null}).eq('id', id);
+  }
+
+  /// Deletes the account and everything in it: profile, projects, searches,
+  /// leads, emails and photos. Companies you found are freed for others.
+  /// Cannot be undone.
+  static Future<void> deleteAccount() async {
+    if (userId == null) return;
+    await _db.rpc('delete_my_account');
+    await Cache.clear();
+    await _db.auth.signOut();
+  }
+
   /// Saves a search. Running the agent on it is added with the agent steps.
-  static Future<void> saveSearch({required String skill, required String sector, required String city, required int count}) async {
+  /// [skills] are saved together in searches.skill_type, joined by commas
+  /// (for example "web,seo"); the find step splits them again.
+  static Future<void> saveSearch({required List<String> skills, required String sector, required String city, required int count}) async {
     final id = userId;
     if (id == null) throw Exception('Sign in to run a search.');
     if (await myStudent() == null) throw Exception('Save your profile first, so the agent knows what you offer.');
-    await _db.from('searches').insert({'student_id': id, 'skill_type': skill, 'sector': sector.trim().isEmpty ? null : sector.trim(), 'city': city.trim().isEmpty ? null : city.trim(), 'count': count});
+    await _db.from('searches').insert({'student_id': id, 'skill_type': skills.join(','), 'sector': sector.trim().isEmpty ? null : sector.trim(), 'city': city.trim().isEmpty ? null : city.trim(), 'count': count});
   }
 }

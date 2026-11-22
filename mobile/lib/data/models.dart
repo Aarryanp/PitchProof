@@ -111,16 +111,18 @@ class Student {
     this.city,
     List<String>? voiceSamples,
     this.dailyLimit = 15,
+    this.photoUrl,
   })  : skills = skills ?? [],
         voiceSamples = voiceSamples ?? [];
   String name;
   String? bio;
   String? yearOrGrad;
   String? goal; // internship, freelance or job
-  List<String> skills; // web, design
+  List<String> skills; // keys from skillOptions
   String? city;
   List<String> voiceSamples;
   int dailyLimit;
+  String? photoUrl;
 
   factory Student.fromJson(Map<String, dynamic> j) => Student(
         name: '${j['name'] ?? ''}',
@@ -131,6 +133,7 @@ class Student {
         city: j['city'] as String?,
         voiceSamples: List<String>.from(j['voice_samples'] ?? const []),
         dailyLimit: (j['daily_limit'] as int?) ?? 15,
+        photoUrl: j['photo_url'] as String?,
       );
 }
 
@@ -185,12 +188,17 @@ class Loaded<T> {
 
 /// The services a student can offer. Each one is a skill pack: its own
 /// website checks, fix and email style. Web and design come first; SEO and
-/// chatbots reuse the same website scan.
+/// chatbots reuse the same website scan. Content, social, video and app
+/// are pitched from the student's own projects until their checks exist.
 const skillOptions = [
   (key: 'web', name: 'Web development', hint: 'Fix slow or broken sites, build new pages'),
   (key: 'design', name: 'Design', hint: 'Logos, colours, layouts, social posts'),
   (key: 'seo', name: 'SEO and marketing', hint: 'Help businesses show up on Google'),
   (key: 'chatbot', name: 'AI chatbots', hint: 'A bot that answers customer questions'),
+  (key: 'content', name: 'Content writing', hint: 'Website copy, blogs, product descriptions'),
+  (key: 'social', name: 'Social media', hint: 'Posts, reels and running their pages'),
+  (key: 'video', name: 'Video editing', hint: 'Ads, reels and product videos'),
+  (key: 'app', name: 'App development', hint: 'Phone apps for bookings, orders or loyalty'),
 ];
 
 String skillName(String key) => skillOptions.where((s) => s.key == key).firstOrNull?.name ?? key;
