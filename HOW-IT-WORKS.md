@@ -84,3 +84,13 @@ For each part, write:
 **Which files.** `app/globals.css` (colours and all the animations), `app/layout.tsx` (font, splash script), `components/splash.tsx`, `components/screen.tsx` (screen-change wrapper), `components/loading.tsx` (shimmer), `components/avatar.tsx`, `components/app-nav.tsx` (sliding tab bar), `app/(app)/pitch/[id]/approved-sheet.tsx`, plus small style changes on every screen. No new libraries: the screen changes use React's built-in `<ViewTransition>`.
 
 **How to test.** Open the app on your phone in a fresh tab: you should see the splash. Tap between tabs, open a lead and go back, then press "Approve and send" on a sample lead.
+
+## The phone app (Flutter, 22 Nov)
+
+**What it does.** The student side of Pitchproof is now a real phone app built with Flutter, in the `mobile/` folder. It has the same screens as the website: a splash where the logo springs in and the check draws itself, a welcome screen, sign-in (Google or an email link), seven setup questions, a four-slide tour, then four tabs (Leads, Search, Results, Me) with a floating tab bar whose blue pill slides to the open tab. Leads now shows the stages top to bottom in order (1 Found, 2 Audited, 3 Needs approval, 4 Sent, 5 Page opened, 6 Replied), with Skipped folded away at the end. Every button and card shrinks slightly when pressed, with a small vibration. Approving a pitch slides up a sheet with a green check. It reads and writes the same Supabase tables as the website, and shows labelled sample data when there is nothing real yet.
+
+**What stays on the server.** The agent steps (finding businesses, website checks, writing emails) need secret keys, so they stay in the Next.js app on Vercel. So do the company pages, which businesses open in a normal browser.
+
+**Which files.** `mobile/lib/main.dart` (start-up), `mobile/lib/theme.dart` (colours, spacing, motion), `mobile/lib/widgets/` (press feel, settle-in animation, shimmer, buttons, cards), `mobile/lib/screens/` (one file per screen), `mobile/lib/data/` (Supabase reads and writes, sample data, email rules), `mobile/test/pitch_rules_test.dart`, `.github/workflows/mobile.yml` (builds the APK).
+
+**How to test.** See `mobile/README.md`: `flutter run --dart-define-from-file=env.json` with your phone plugged in. `flutter test` runs the email-rule tests.
