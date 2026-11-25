@@ -4,13 +4,16 @@ import '../data/models.dart';
 import '../data/pitch_rules.dart';
 import '../data/repo.dart';
 import '../theme.dart';
+import '../widgets/pressable.dart';
 import '../widgets/settle.dart';
 import '../widgets/shimmer.dart';
 import '../widgets/ui.dart';
 
 /// Pitch review: what the audit found (with proof), the fix preview, and
-/// the email draft. The rule checks run as you type, and Approve stays off
-/// until they all pass. Approving does not send anything by itself.
+/// the email draft. Pick a tone to get a fresh AI version, edit it, or write
+/// your own with the AI draft kept as a suggestion. The rule checks run as
+/// you type, and Approve stays off until they all pass. Approving does not
+/// send anything by itself.
 class PitchScreen extends StatefulWidget {
   const PitchScreen({super.key, required this.id});
   final String id;
@@ -24,8 +27,68 @@ class _PitchScreenState extends State<PitchScreen> {
   final _body = TextEditingController();
   final _personal = TextEditingController();
   bool _filled = false;
+  final _bodyFocus = FocusNode();
   bool _busy = false;
   String? _note;
+  String? _toneLoading; // the tone chip waiting for a new version
+  String? _tonePicked; // the last tone the student asked for
+  ({String subject, String body, String label})? _suggestion;
+
+  static const _tones = [('friendly', 'Friendly'), ('formal', 'Formal'), ('short', 'Short')];
+
+  @override
+  void dispose() {
+    for (final c in [_subject, _body, _personal]) {
+      c.dispose();
+    }
+    _bodyFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _retone(bool sample, String pitchId, String tone, String label) async {
+    if (_toneLoading != null) return;
+    if (sample) {
+      setState(() => _note = 'Sample data: tones work on your real pitches.');
+      return;
+    }
+    setState(() {
+      _toneLoading = tone;
+      _note = null;
+    });
+    try {
+      final d = await Agent.redraft(pitchId, tone);
+      if (!mounted) return;
+      setState(() {
+        _tonePicked = tone;
+        _suggestion = (subject: d.subject, body: d.body, label: '$label version');
+      });
+    } catch (e) {
+      if (mounted) setState(() => _note = '$e'.replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _toneLoading = null);
+    }
+  }
+
+  /// Clears the message so the student can write it themselves, keeping the
+  /// AI draft below as a suggestion to copy from.
+  void _writeOwn() {
+    setState(() {
+      if (_body.text.trim().isNotEmpty) _suggestion = (subject: _subject.text, body: _body.text, label: 'AI draft');
+      _body.clear();
+    });
+    _bodyFocus.requestFocus();
+  }
+
+  void _useSuggestion() {
+    final s = _suggestion;
+    if (s == null) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (s.subject.trim().isNotEmpty) _subject.text = s.subject;
+      _body.text = s.body;
+      _suggestion = null;
+    });
+  }
 
   @override
   void initState() {
@@ -189,6 +252,16 @@ class _PitchScreenState extends State<PitchScreen> {
                   : 'To ${p.contact!.name != null ? '${p.contact!.name}${p.contact!.role != null ? ', ${p.contact!.role}' : ''} · ' : ''}${p.contact!.email}',
               style: T.small,
             ),
+            if (editable) ...[
+              const SizedBox(height: 14),
+              Text('Tone', style: T.tiny),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final (key, label) in _tones)
+                  _ToneChip(label, selected: _tonePicked == key, loading: _toneLoading == key, onTap: () => _retone(sample, p.id, key, label)),
+                _ToneChip('Write my own', icon: Icons.edit_rounded, onTap: _writeOwn),
+              ]),
+            ],
             const SizedBox(height: 14),
             Text('Subject', style: T.tiny),
             const SizedBox(height: 6),
@@ -196,7 +269,28 @@ class _PitchScreenState extends State<PitchScreen> {
             const SizedBox(height: 12),
             Text('Message', style: T.tiny),
             const SizedBox(height: 6),
-            TextField(controller: _body, enabled: editable, minLines: 8, maxLines: null, style: T.body.copyWith(fontSize: 14.5, height: 1.5)),
+            TextField(
+              controller: _body,
+              focusNode: _bodyFocus,
+              enabled: editable,
+              minLines: 8,
+              maxLines: null,
+              style: T.body.copyWith(fontSize: 14.5, height: 1.5),
+              decoration: const InputDecoration(hintText: 'Write it your way. The checks below keep it within the rules.'),
+            ),
+            AnimatedSize(
+              duration: M.normal,
+              curve: M.ease,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: M.normal,
+                switchInCurve: M.ease,
+                transitionBuilder: (w, a) => FadeTransition(opacity: a, child: SlideTransition(position: Tween(begin: const Offset(0, 0.06), end: Offset.zero).animate(a), child: w)),
+                child: _suggestion == null || !editable
+                    ? const SizedBox(width: double.infinity, key: ValueKey('none'))
+                    : _Suggestion(key: ValueKey(_suggestion), s: _suggestion!, onUse: _useSuggestion, onDismiss: () => setState(() => _suggestion = null)),
+              ),
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(14),
@@ -251,6 +345,77 @@ class _PitchScreenState extends State<PitchScreen> {
       ),
     ];
   }
+}
+
+/// A soft rounded chip for picking the email's tone. Shows a small spinner
+/// while the new version is being written.
+class _ToneChip extends StatelessWidget {
+  const _ToneChip(this.label, {required this.onTap, this.selected = false, this.loading = false, this.icon});
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final bool loading;
+  final IconData? icon;
+  @override
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        radius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: M.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? C.primarySoft : C.bg,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? C.primary : C.line),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            AnimatedSwitcher(
+              duration: M.fast,
+              child: loading
+                  ? const SizedBox(key: ValueKey('spin'), width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: C.primary))
+                  : icon != null
+                      ? Icon(icon, key: const ValueKey('icon'), size: 15, color: C.muted)
+                      : const SizedBox(key: ValueKey('empty'), width: 0),
+            ),
+            if (loading || icon != null) const SizedBox(width: 6),
+            Text(label, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: selected ? C.primary : C.fg)),
+          ]),
+        ),
+      );
+}
+
+/// A version of the email the student can copy in with one tap, or ignore.
+class _Suggestion extends StatelessWidget {
+  const _Suggestion({super.key, required this.s, required this.onUse, required this.onDismiss});
+  final ({String subject, String body, String label}) s;
+  final VoidCallback onUse;
+  final VoidCallback onDismiss;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: C.primarySoft, borderRadius: BorderRadius.circular(16)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.auto_awesome_rounded, size: 16, color: C.primary),
+            const SizedBox(width: 6),
+            Expanded(child: Text('Suggestion: ${s.label}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: C.primary))),
+          ]),
+          if (s.subject.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(s.subject, style: T.h3.copyWith(fontSize: 14)),
+          ],
+          const SizedBox(height: 6),
+          Text(s.body, style: T.body.copyWith(fontSize: 14, height: 1.5)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: Btn('Use this', kind: BtnKind.primary, big: false, expand: true, onTap: onUse)),
+            const SizedBox(width: 10),
+            Expanded(child: Btn('Dismiss', kind: BtnKind.plain, big: false, expand: true, onTap: onDismiss)),
+          ]),
+        ]),
+      );
 }
 
 class _PreviewBox extends StatelessWidget {

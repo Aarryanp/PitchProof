@@ -10,7 +10,7 @@ const text = (v: FormDataEntryValue | null) => {
   return s.length ? s : null;
 };
 
-// Saves the Profile screen: the student row, their voice samples and their
+// Saves the Profile screen: the student row and their
 // past projects. Projects are replaced as a set each time (simplest for 3–6 items).
 export async function saveProfile(_prev: SaveState, form: FormData): Promise<SaveState> {
   const supabase = await createClient();
@@ -31,7 +31,6 @@ export async function saveProfile(_prev: SaveState, form: FormData): Promise<Sav
     goal: goal === "internship" || goal === "freelance" || goal === "job" ? goal : null,
     skill_types: form.getAll("skill_types").map(String),
     city: text(form.get("city")),
-    voice_samples: form.getAll("voice_samples").map((v) => String(v).trim()).filter(Boolean),
   });
   if (error) return { ok: false, message: error.message };
 

@@ -28,7 +28,6 @@ export function ProfileForm({ student, portfolio, readOnly }: { student: Student
   const [items, setItems] = useState<Item[]>(
     (portfolio.length ? portfolio : [{ title: "", skill_tag: "web", link: "", image_url: "", one_line: "" } as PortfolioItem]).map((p, i) => ({ ...p, key: i })),
   );
-  const voices = [0, 1, 2].map((i) => student.voice_samples[i] ?? "");
 
   return (
     <form action={action} className="flex max-w-3xl flex-col gap-6">
@@ -121,19 +120,6 @@ export function ProfileForm({ student, portfolio, readOnly }: { student: Student
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>How you write</CardTitle>
-            <CardDescription>
-              Paste 2–3 short messages you&apos;ve written yourself (WhatsApp, email, anything). The email drafts copy your tone.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {voices.map((v, i) => (
-              <Textarea key={i} name="voice_samples" defaultValue={v} placeholder={`Message ${i + 1}`} aria-label={`Message ${i + 1}`} />
-            ))}
-          </CardContent>
-        </Card>
       </fieldset>
 
       {!readOnly && (

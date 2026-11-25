@@ -25,8 +25,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   late final _city = TextEditingController(text: s.city ?? '');
   late final _year = TextEditingController(text: s.yearOrGrad ?? '');
   late final _bio = TextEditingController(text: s.bio ?? '');
-  late final _voice1 = TextEditingController(text: s.voiceSamples.elementAtOrNull(0) ?? '');
-  late final _voice2 = TextEditingController(text: s.voiceSamples.elementAtOrNull(1) ?? '');
   int step = 0;
   bool forward = true;
   bool saving = false;
@@ -35,7 +33,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    for (final c in [_name, _city, _year, _bio, _voice1, _voice2]) {
+    for (final c in [_name, _city, _year, _bio]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -81,13 +79,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             if (projects.length < 3) Btn('Add another', icon: Icons.add_rounded, kind: BtnKind.soft, big: false, onTap: () => setState(() => projects.add(Project()))),
           ]),
         ),
-        (
-          title: 'How do you write?',
-          hint: 'Paste two short messages you wrote to anyone. Emails will sound like you.',
-          ok: _voice1.text.trim().isNotEmpty,
-          optional: true,
-          body: Column(children: [_field(_voice1, 'A message you sent', lines: 3), const SizedBox(height: S.gap), _field(_voice2, 'Another one (optional)', lines: 3)]),
-        ),
       ];
 
   Widget _field(TextEditingController c, String hint, {int lines = 1}) =>
@@ -106,8 +97,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       ..name = _name.text
       ..city = _city.text
       ..yearOrGrad = _year.text
-      ..bio = _bio.text
-      ..voiceSamples = [_voice1.text, _voice2.text];
+      ..bio = _bio.text;
     if (userId == null) {
       // Looking around without an account: nothing to save, carry on.
       if (widget.editing) return Navigator.of(context).pop();

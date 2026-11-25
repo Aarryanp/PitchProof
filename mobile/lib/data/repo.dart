@@ -249,7 +249,6 @@ class Repo {
       'goal': s.goal,
       'skill_types': s.skills,
       'city': s.city?.trim(),
-      'voice_samples': s.voiceSamples.where((v) => v.trim().isNotEmpty).toList(),
     });
     await _db.from('portfolio_items').delete().eq('student_id', id);
     final rows = projects.where((p) => p.title.trim().isNotEmpty).map((p) => {
@@ -346,6 +345,13 @@ class Agent {
         AgentLead(id: '${l['id']}', name: '${l['name']}', website: l['website'] as String?),
     ];
     return (searchId: '${r['searchId']}', leads: leads, note: '${r['note'] ?? ''}');
+  }
+
+  /// A fresh version of a draft email in another tone: friendly, formal or
+  /// short. Only returns the text; nothing is saved until Save or Approve.
+  static Future<({String subject, String body})> redraft(String pitchId, String tone) async {
+    final r = await _post('/api/agent/redraft', {'pitchId': pitchId, 'tone': tone});
+    return (subject: '${r['subject'] ?? ''}', body: '${r['body'] ?? ''}');
   }
 
   /// Steps 2–8 for one business: check the site, quality gate, draft email.
