@@ -15,10 +15,18 @@ export async function findForSearch(opts: { studentId: string; sector: string; c
   const db = createAdminClient();
   const { studentId, sector, city, count } = opts;
 
-  // Businesses this student already has for this search but hasn't checked
-  // yet come first, then unclaimed ones.
-  const { data: audited } = await db.from("audits").select("company_id").eq("student_id", studentId);
-  const done = new Set((audited ?? []).map((a) => a.company_id as string));
+  // Leave out businesses that are finished for this student: skipped by the
+  // quality gate, or already drafted. Ones that passed but have no draft yet
+  // (no email found, or the draft failed) are picked again, so the next search
+  // can finish them. Their saved checks are reused, so this costs nothing.
+  const [{ data: audited }, { data: pitched }] = await Promise.all([
+    db.from("audits").select("company_id, passed_gate").eq("student_id", studentId),
+    db.from("pitches").select("company_id").eq("student_id", studentId),
+  ]);
+  const done = new Set([
+    ...(audited ?? []).filter((a) => !a.passed_gate).map((a) => a.company_id as string),
+    ...(pitched ?? []).map((p) => p.company_id as string),
+  ]);
   const { data: saved } = await db
     .from("companies")
     .select("id, name, website, claimed_by")
@@ -26,7 +34,9 @@ export async function findForSearch(opts: { studentId: string; sector: string; c
     .ilike("city", city)
     .or(`claimed_by.is.null,claimed_by.eq.${studentId}`)
     .order("created_at");
-  let pool = (saved ?? []).filter((c) => !done.has(c.id));
+  // Never-checked businesses first, then ones waiting for a draft.
+  const checked = new Set((audited ?? []).map((a) => a.company_id as string));
+  let pool = (saved ?? []).filter((c) => !done.has(c.id)).sort((a, b) => Number(checked.has(a.id)) - Number(checked.has(b.id)));
 
   let crustNote = "";
   if (pool.length < count) {

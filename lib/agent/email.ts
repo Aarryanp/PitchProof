@@ -25,7 +25,7 @@ export async function draftEmail(opts: {
 }): Promise<Draft> {
   const { student, company, findings } = opts;
   const first = student.name.trim().split(/\s+/)[0] || student.name;
-  const facts = findings.filter((f) => f.hard).slice(0, 2).map((f) => `- ${f.problem}: ${f.evidence}`).join("\n");
+  const facts = findings.filter((f) => f.hard).slice(0, 2).map((f) => `- ${f.problem} (${f.evidence})`).join("\n");
   const voice = student.voice_samples.filter((v) => v.trim()).slice(0, 3).map((v, i) => `Sample ${i + 1}:\n${v.trim()}`).join("\n\n");
 
   const base = `You are writing a short cold email for a student, in the student's own voice. It must read like they typed it themselves.
@@ -39,14 +39,14 @@ ${voice ? `How they write (copy this tone, word choice and sentence length, not 
 THE BUSINESS
 Name: ${company.name}${company.city ? `, ${company.city}` : ""}${company.sector ? ` (${company.sector})` : ""}
 Greet: ${opts.contactName ? opts.contactName : `"Hi ${company.name} team"`}
-Facts found by real tools (use one, with its number, exactly as given; never invent other facts or praise):
+Facts found by real tools. Mention the first one (and the second only if it fits naturally). Say it in your own plain words, the way you'd tell a friend, keeping any number exactly as given. Never invent other facts, numbers or praise:
 ${facts}
 
 THE LINK (include it exactly once, on its own line): ${opts.pageUrl}
 
 RULES
 - ${MIN_WORDS} to ${MAX_WORDS} words in the body, counting the greeting and sign-off. Aim for about 80.
-- Shape: who I am (one line), what I noticed (one fact with its number), what I made (the link), a small ask (a 10-minute call or WhatsApp this week), an easy way to say no (for example: if not, just reply "no" and I won't write again).
+- Shape: who I am (one line), what I noticed (the fact, with its number if it has one), what I made (a version of their home page that fixes it, at the link), a small ask (a 10-minute call or WhatsApp this week), an easy way to say no (for example: if not, just reply "no" and I won't write again).
 - Plain text only: no bullet points, no bold, no emojis, no markdown.
 - Never use these phrases: ${BANNED_PHRASES.map((p) => `"${p}"`).join(", ")}.
 - Sign off with just "${first}".
