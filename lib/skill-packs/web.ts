@@ -5,15 +5,16 @@ import { abandoned, brokenSite, top3, type SkillPack } from "./types";
 export const webPack: SkillPack = {
   key: "web",
   name: "Web development",
-  offer: "a faster, phone-friendly version of the site",
+  offer: "a fixed-up version of their home page: faster on phones and easy to contact",
   findings(f) {
     const broken = brokenSite(f);
     if (broken.length) return broken;
     const out: Finding[] = [];
-    if (f.performance !== null && f.performance < 50)
+    // Slow: Google's mobile speed score under 50, or the main content takes 10+ seconds to show.
+    if ((f.performance !== null && f.performance < 50) || (f.loadSeconds !== null && f.loadSeconds >= 10))
       out.push({
         problem: "Slow on phones",
-        evidence: `Mobile speed score ${f.performance}/100${f.loadSeconds ? `; the main content takes about ${f.loadSeconds} seconds to show` : ""}`,
+        evidence: `Mobile speed score ${f.performance ?? "unknown"}/100${f.loadSeconds ? `; the main content takes about ${f.loadSeconds} seconds to show` : ""}`,
         source: "Google PageSpeed Insights (mobile)",
         hard: true,
       });
