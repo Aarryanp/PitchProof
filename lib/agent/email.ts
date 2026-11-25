@@ -59,6 +59,7 @@ RULES
 - ${MIN_WORDS} to ${MAX_WORDS} words in the body, counting the greeting and sign-off. Aim for about ${tone === "short" ? 62 : 80}.
 - Shape: who I am (one line), what I noticed (the fact, with its number if it has one), what I made (a version of their home page that fixes it, at the link), a small ask (a 10-minute call or WhatsApp this week), an easy way to say no (for example: if not, just reply "no" and I won't write again).
 - Plain text only: no bullet points, no bold, no emojis, no markdown.
+- Layout: the greeting on its own line, then 2 or 3 short paragraphs with a blank line between them, the link on its own line, and the sign-off on its own line.
 - Never use these phrases: ${BANNED_PHRASES.map((p) => `"${p}"`).join(", ")}.
 - Sign off with just "${first}".
 - Subject: short, plain, lowercase, like "your clinic's website on phones". No clickbait.
@@ -69,11 +70,20 @@ Answer as JSON with "subject" and "body".`;
   let last: Draft = { subject: "", body: "", passes: false, problems: ["Not written yet"] };
   for (let attempt = 0; attempt < 3; attempt++) {
     const out = await askJson<{ subject: string; body: string }>(prompt, schema, { temperature: 0.7 });
-    const body = out.body.replace(/\r\n/g, "\n").trim();
+    const body = tidy(out.body, opts.pageUrl);
     const failed = checkEmail(body).filter((c) => !c.ok);
     last = { subject: out.subject.trim(), body, passes: failed.length === 0, problems: failed.map((c) => `${c.label}${c.detail ? ` (${c.detail})` : ""}`) };
     if (last.passes) return last;
     prompt = `${base}\n\nYour last draft broke these rules: ${last.problems.join("; ")}. Rewrite it so every rule passes.\nLast draft:\n${body}`;
   }
   return last;
+}
+
+// Small models sometimes return one long paragraph. Put the link on its own
+// line so it is easy to tap, and keep blank lines to at most one.
+function tidy(text: string, url: string): string {
+  let body = text.replace(/\r\n/g, "\n").trim();
+  const i = body.indexOf(url);
+  if (i >= 0) body = `${body.slice(0, i).trimEnd()}\n\n${url}\n\n${body.slice(i + url.length).replace(/^[.,;:!]+/, "").trimStart()}`;
+  return body.replace(/\n{3,}/g, "\n\n").trim();
 }

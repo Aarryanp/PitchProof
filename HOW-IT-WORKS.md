@@ -126,3 +126,9 @@ For each part, write:
 - Files: `lib/agent/email.ts` (tones, no writing samples), `app/api/agent/redraft/route.ts` (new: rewrite one draft in a tone, nothing saved), `lib/agent/process.ts` (the fix), `mobile/lib/screens/pitch.dart` (tone chips, Write my own, suggestion card), `mobile/lib/data/repo.dart` (`Agent.redraft`), `mobile/lib/screens/onboarding.dart` and the web onboarding and profile (the writing step removed). The `voice_samples` column stays in the database, unused, so no schema change.
 - How to test it: open a draft in Leads, tap **Formal**. After a few seconds a formal version appears below. Tap **Use this**, then **Save edits**. Tap **Write my own**: the message empties and the old draft shows as a suggestion.
 
+
+## Faster, sturdier email drafts (25 Nov)
+
+- What it does: on the free Gemini plan, the main Flash model often answers "busy" or "over quota". The backup thought for a long time, so each email took 20–50 seconds and some failed. Now every Gemini call asks for as little "thinking" as the model allows (about 1–3 seconds per email). If a model is busy it tries the next one (flash-latest, then flash-lite-latest, then 3.5-flash), waits 5 seconds and goes round once more before giving up with a plain message. The email is also tidied so the link is always on its own line, and a draft that couldn't be saved now shows as an error instead of looking done.
+- Files: `lib/gemini.ts`, `lib/agent/email.ts`, `lib/agent/process.ts`.
+- How to test it: run the Nagpur clinics search again. Z-Edge, Doctors On Click and Varunam should get drafts in Leads within a few seconds each.
