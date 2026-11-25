@@ -195,6 +195,18 @@ create index on public.portfolio_items (student_id);
 create index on public.searches (student_id);
 create index on public.skill_gaps (student_id);
 
+-- Saved replies from paid tools (Olostep, Crustdata, PageSpeed, Google Places),
+-- so nothing is fetched twice. Added 22 Nov 2026 (migration add_fetch_cache).
+-- No policies: only server code with the secret key can read or write it.
+create table public.fetch_cache (
+  key text primary key,
+  source text not null,
+  ok boolean not null default true,
+  data jsonb not null,
+  fetched_at timestamptz not null default now()
+);
+alter table public.fetch_cache enable row level security;
+
 -- Delete account (22 Nov): a signed-in student deletes their own account.
 -- Deleting the auth user cascades to students and every row that belongs
 -- to them; their profile photos are removed too.

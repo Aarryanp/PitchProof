@@ -7,8 +7,9 @@ import '../widgets/settle.dart';
 import '../widgets/ui.dart';
 
 /// New search: what kind of business to look for, where, and how many.
-/// For now this saves the search; running the agent on it comes with the
-/// agent steps.
+/// "Run the agent" asks the server to pick businesses, then checks them a
+/// few at a time and shows each result here as it comes in. Drafts land in
+/// Leads under "Needs approval". Nothing is sent from here.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
   @override
@@ -42,25 +43,95 @@ class _SearchScreenState extends State<SearchScreen> {
   String? note;
   bool ok = false;
 
+  List<AgentLead> _leads = [];
+  bool _finding = false;
+
   Future<void> _run() async {
     FocusScope.of(context).unfocus();
-    setState(() {
-      busy = true;
-      note = null;
-    });
-    try {
-      await Repo.saveSearch(skills: skills.toList(), sector: _sectorText, city: _city.text, count: count.round());
-      setState(() {
-        ok = true;
-        note = '${count.round()} ${_sectorText.toLowerCase()} in ${_city.text.trim()}. The agent steps are not connected to the app yet, so the next steps wait.';
-      });
-    } catch (e) {
+    if (_sectorText.isEmpty) {
       setState(() {
         ok = false;
-        note = '$e'.replaceFirst('Exception: ', '');
+        note = 'Type the kind of business first.';
       });
+      return;
+    }
+    setState(() {
+      busy = true;
+      _finding = true;
+      ok = true;
+      note = '${count.round()} ${_sectorText.toLowerCase()} in ${_city.text.trim()}.';
+      _leads = [];
+    });
+    try {
+      final r = await Agent.start(skills: skills.toList(), sector: _sectorText, city: _city.text, count: count.round());
+      if (!mounted) return;
+      setState(() {
+        ok = true;
+        _finding = false;
+        _leads = r.leads;
+        note = r.leads.isEmpty ? 'No new businesses for ${_sectorText.toLowerCase()} in ${_city.text.trim()}. ${r.note}' : r.note;
+      });
+      // Check three at a time: each check can take up to a minute.
+      final queue = [...r.leads];
+      Future<void> worker() async {
+        while (queue.isNotEmpty) {
+          final lead = queue.removeAt(0);
+          await Agent.check(r.searchId, skills.toList(), lead);
+          if (mounted) setState(() {});
+        }
+      }
+      await Future.wait([worker(), worker(), worker()]);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          ok = false;
+          _finding = false;
+          note = '$e'.replaceFirst('Exception: ', '');
+        });
+      }
     }
     if (mounted) setState(() => busy = false);
+  }
+
+  int _count(String stage) => _leads.where((l) => l.stage == stage).length;
+
+  Widget _step(String label, bool done, {bool active = false}) => Row(children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(color: done ? C.green : C.bg, shape: BoxShape.circle),
+          child: done
+              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+              : active
+                  ? const Padding(padding: EdgeInsets.all(6), child: CircularProgressIndicator(strokeWidth: 2, color: C.primary))
+                  : const Icon(Icons.more_horiz_rounded, size: 16, color: C.muted),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: T.h3.copyWith(color: done || active ? C.fg : C.muted))),
+      ]);
+
+  Widget _leadRow(AgentLead l) {
+    final (IconData icon, Color color) = switch (l.stage) {
+      null => (Icons.hourglass_top_rounded, C.muted),
+      'needs_approval' => (Icons.mark_email_unread_rounded, C.green),
+      'audited' => (Icons.fact_check_rounded, C.primary),
+      'skipped' => (Icons.do_not_disturb_on_rounded, C.muted),
+      _ => (Icons.error_outline_rounded, C.problemFg),
+    };
+    final line = l.stage == null ? 'Checking the website…' : [l.topProblem, l.note].whereType<String>().where((t) => t.isNotEmpty).join(' · ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(top: 2), child: Icon(icon, size: 20, color: color)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(l.name, style: T.h3),
+            if (line.isNotEmpty) Text(line, style: T.small),
+          ]),
+        ),
+      ]),
+    );
   }
 
   @override
@@ -176,27 +247,22 @@ class _SearchScreenState extends State<SearchScreen> {
                                 const SizedBox(height: 2),
                                 Text(note!, style: T.small),
                                 const SizedBox(height: 14),
-                                for (final (i, (step, done)) in const [
-                                  ('Search saved', true),
-                                  ('Find businesses', false),
-                                  ('Check their websites', false),
-                                  ('Draft emails for you to approve', false),
-                                ].indexed)
-                                  Padding(
-                                    padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
-                                    child: Row(children: [
-                                      Container(
-                                        width: 26,
-                                        height: 26,
-                                        decoration: BoxDecoration(color: done ? C.green : C.bg, shape: BoxShape.circle),
-                                        child: Icon(done ? Icons.check_rounded : Icons.more_horiz_rounded, size: 16, color: done ? Colors.white : C.muted),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(child: Text(step, style: T.h3.copyWith(color: done ? C.fg : C.muted))),
-                                    ]),
-                                  ),
+                                _step(_finding ? 'Finding businesses' : 'Found ${_leads.length} ${_leads.length == 1 ? 'business' : 'businesses'}', !_finding, active: _finding),
+                                const SizedBox(height: 10),
+                                _step(
+                                  _leads.isEmpty || _leads.any((l) => !l.done) ? 'Check their websites' : 'Checked ${_leads.length}, skipped ${_count('skipped')} with no real problem',
+                                  _leads.isNotEmpty && _leads.every((l) => l.done),
+                                  active: !_finding && _leads.any((l) => !l.done),
+                                ),
+                                const SizedBox(height: 10),
+                                _step(
+                                  _count('needs_approval') > 0 ? '${_count('needs_approval')} ${_count('needs_approval') == 1 ? 'email' : 'emails'} ready for you in Leads' : 'Draft emails for you to approve',
+                                  _count('needs_approval') > 0 && !busy,
+                                  active: busy && !_finding,
+                                ),
+                                for (final l in _leads) _leadRow(l),
                                 const SizedBox(height: 14),
-                                Text('Businesses the agent finds will be listed here and in Leads.', style: T.small.copyWith(fontSize: 12)),
+                                Text('Nothing is sent until you open a draft in Leads and press Approve.', style: T.small.copyWith(fontSize: 12)),
                               ]),
                             ),
                           ),

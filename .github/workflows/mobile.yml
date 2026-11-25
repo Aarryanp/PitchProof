@@ -2,6 +2,7 @@
 # an Android APK you can install, and the web version of the app.
 # The Supabase address and public key come from the repository's
 # Actions secrets SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (never from code).
+# API_URL (the Next.js server address) is an Actions variable; it defaults to the Vercel address.
 # Without them the app still builds and shows sample data only.
 name: Mobile app
 
@@ -32,8 +33,10 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          # The Next.js server the agent steps run on (an Actions variable, not secret).
+          API_URL: ${{ vars.API_URL || 'https://pitch-proof.vercel.app' }}
         run: |
-          printf '{"SUPABASE_URL":"%s","SUPABASE_PUBLISHABLE_KEY":"%s"}' "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY" > env.json
+          printf '{"SUPABASE_URL":"%s","SUPABASE_PUBLISHABLE_KEY":"%s","API_URL":"%s"}' "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY" "$API_URL" > env.json
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test

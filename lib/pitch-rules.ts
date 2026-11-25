@@ -54,3 +54,10 @@ export function checkEmail(body: string): RuleCheck[] {
 export function emailPasses(body: string): boolean {
   return checkEmail(body).every((c) => c.ok);
 }
+
+// Nothing is sent unless the student pressed Approve (status "approved" with
+// a time), and the email still passes every rule. The Gmail step (step 9)
+// must call this right before sending.
+export function canSend(pitch: { status: string; approved_at: string | null; email_body: string | null }): boolean {
+  return pitch.status === "approved" && Boolean(pitch.approved_at) && emailPasses(pitch.email_body ?? "");
+}

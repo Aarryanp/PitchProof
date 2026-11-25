@@ -5,6 +5,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'models.dart';
@@ -293,14 +294,70 @@ class Repo {
     await Cache.clear();
     await _db.auth.signOut();
   }
+}
 
-  /// Saves a search. Running the agent on it is added with the agent steps.
-  /// [skills] are saved together in searches.skill_type, joined by commas
-  /// (for example "web,seo"); the find step splits them again.
-  static Future<void> saveSearch({required List<String> skills, required String sector, required String city, required int count}) async {
-    final id = userId;
-    if (id == null) throw Exception('Sign in to run a search.');
-    if (await myStudent() == null) throw Exception('Save your profile first, so the agent knows what you offer.');
-    await _db.from('searches').insert({'student_id': id, 'skill_type': skills.join(','), 'sector': sector.trim().isEmpty ? null : sector.trim(), 'city': city.trim().isEmpty ? null : city.trim(), 'count': count});
+/// The Next.js server's address, from the build command
+/// (--dart-define-from-file=env.json, key API_URL). The agent steps run there.
+const apiUrl = String.fromEnvironment('API_URL', defaultValue: 'https://pitch-proof.vercel.app');
+
+/// One business the agent picked for a search.
+class AgentLead {
+  AgentLead({required this.id, required this.name, this.website});
+  final String id;
+  final String name;
+  final String? website;
+  /// Filled in once the agent has checked it: skipped, audited or needs_approval.
+  String? stage;
+  String? note;
+  String? topProblem;
+  bool get done => stage != null;
+}
+
+/// Calls the agent steps on the server. The server checks the student's
+/// sign-in token, so it only ever works on that student's own leads.
+class Agent {
+  static Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+    final token = hasBackend ? _db.auth.currentSession?.accessToken : null;
+    if (token == null) throw Exception('Sign in to run a search.');
+    final http.Response res;
+    try {
+      res = await http
+          .post(Uri.parse('$apiUrl$path'), headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'}, body: jsonEncode(body))
+          .timeout(const Duration(seconds: 200));
+    } catch (_) {
+      throw Exception("Couldn't reach the Pitchproof server. Check your internet and try again.");
+    }
+    Map<String, dynamic> json;
+    try {
+      json = Map<String, dynamic>.from(jsonDecode(res.body) as Map);
+    } catch (_) {
+      throw Exception('The server gave an unexpected answer (${res.statusCode}).');
+    }
+    if (res.statusCode >= 400) throw Exception('${json['error'] ?? 'Something went wrong (${res.statusCode}).'}');
+    return json;
+  }
+
+  /// Step 1: saves the search and picks businesses for it.
+  static Future<({String searchId, List<AgentLead> leads, String note})> start({required List<String> skills, required String sector, required String city, required int count}) async {
+    if (userId == null) throw Exception('Sign in to run a search.');
+    final r = await _post('/api/agent/search', {'skills': skills, 'sector': sector.trim(), 'city': city.trim(), 'count': count});
+    final leads = [
+      for (final l in (r['leads'] as List? ?? const []))
+        AgentLead(id: '${l['id']}', name: '${l['name']}', website: l['website'] as String?),
+    ];
+    return (searchId: '${r['searchId']}', leads: leads, note: '${r['note'] ?? ''}');
+  }
+
+  /// Steps 2–8 for one business: check the site, quality gate, draft email.
+  static Future<void> check(String searchId, List<String> skills, AgentLead lead) async {
+    try {
+      final r = await _post('/api/agent/company', {'searchId': searchId, 'companyId': lead.id, 'skills': skills});
+      lead.stage = '${r['stage']}';
+      lead.note = r['note'] as String?;
+      lead.topProblem = r['topProblem'] as String?;
+    } catch (e) {
+      lead.stage = 'error';
+      lead.note = '$e'.replaceFirst('Exception: ', '');
+    }
   }
 }

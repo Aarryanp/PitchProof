@@ -11,7 +11,9 @@ Built and tested with Flutter 3.44.0 (the version on the Mac and in the GitHub b
 
 1. Copy `env.example.json` to `env.json` and fill in the two values from
    `.env.local` in the main folder (`NEXT_PUBLIC_SUPABASE_URL` and
-   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). `env.json` stays out of git.
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). `API_URL` is the Next.js
+   server the agent runs on (your Vercel address, or `http://<your Mac's
+   address>:3000` while testing locally). `env.json` stays out of git.
 2. Plug in your phone (or start a simulator), then:
 
 ```
@@ -38,4 +40,5 @@ every push that changes `mobile/`. Download them from the run's
 
 - Flutter and Dart (Google)
 - `supabase_flutter` (sign-in and database)
+- `http` (Dart team; calls the agent steps on the Next.js server)
 - Plus Jakarta Sans font, bundled in `assets/fonts` (Open Font License)
