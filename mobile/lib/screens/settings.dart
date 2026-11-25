@@ -97,9 +97,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
   static const _sections = [
-    ('What we keep about you', 'Your name, email, city, year, the services you offer, one line about you, your projects, your profile photo and the sample messages you paste so emails sound like you.'),
+    ('What we keep about you', 'Your name, email, city, year, the services you offer, one line about you, your projects, and your profile photo.'),
     ('What we keep about businesses', 'Public information only: the business name, website, city, the results of our website checks, and a public contact email or phone from their own site or listings.'),
-    ('How we use it', 'To find businesses that need your skills, check their websites, build a page for each one and draft emails in your voice. Nothing is sent until you press Approve, at most 15 new emails a day, and follow-ups stop on any reply.'),
+    ('How we use it', 'To find businesses that need your skills, check their websites, build a page for each one and draft short emails for you to edit. Nothing is sent until you press Approve, at most 15 new emails a day, and follow-ups stop on any reply.'),
     ('Who we share it with', 'Businesses you email see your name, photo, one line about you and your projects on the page made for them. We use Supabase to store data, Google Gemini to write drafts, Google PageSpeed to test sites, and Crustdata and Olostep to find businesses and read their websites. We never sell your data.'),
     ('Business pages', 'Each page is private (only the link opens it), hidden from search engines, and deleted if the business says no.'),
     ('Deleting your data', 'Me → Delete account removes your profile, projects, searches, leads, drafts, emails and photo for good. Businesses you found become free for other students.'),

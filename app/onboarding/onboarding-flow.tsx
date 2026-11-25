@@ -41,7 +41,6 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
       ? portfolio.map((p) => ({ title: p.title, one_line: p.one_line ?? "", link: p.link ?? "", skill_tag: p.skill_tag ?? "web" }))
       : [{ title: "", one_line: "", link: "", skill_tag: "web" }],
   );
-  const [voices, setVoices] = useState<string[]>([0, 1].map((i) => student.voice_samples[i] ?? ""));
 
   const steps = [
     {
@@ -149,25 +148,6 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
         </div>
       ),
     },
-    {
-      title: "How do you write?",
-      hint: "Paste 2 short messages you wrote yourself (WhatsApp, email, anything). Your pitch emails will sound like you.",
-      ok: voices.filter((v) => v.trim()).length >= 1,
-      body: (
-        <div className="flex flex-col gap-3">
-          {voices.map((v, i) => (
-            <Textarea
-              key={i}
-              value={v}
-              onChange={(e) => setVoices(voices.map((x, j) => (j === i ? e.target.value : x)))}
-              placeholder={i === 0 ? "e.g. Hey, saw your message. I can take a look tonight." : "Another message"}
-              className="min-h-24 text-base"
-              aria-label={`Message ${i + 1}`}
-            />
-          ))}
-        </div>
-      ),
-    },
   ];
 
   function update(i: number, patch: Partial<Project>) {
@@ -192,7 +172,6 @@ export function OnboardingFlow({ student, portfolio }: { student: Student; portf
     form.set("bio", bio);
     if (student.photo_url) form.set("photo_url", student.photo_url);
     skills.forEach((s) => form.append("skill_types", s));
-    voices.forEach((v) => form.append("voice_samples", v));
     projects.forEach((p) => {
       form.append("item_title", p.title);
       form.append("item_skill", p.skill_tag);
