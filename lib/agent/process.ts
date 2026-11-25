@@ -31,6 +31,9 @@ export async function processCompany(opts: { studentId: string; searchId: string
   const co = company; // the same row, kept for the draft step below
   const result = (stage: ProcessResult["stage"], note: string, top: Finding | null = null): ProcessResult => ({ companyId, name: company.name, stage, topProblem: top?.evidence ?? null, note });
 
+  const { data: studentRow } = await db.from("students").select("*").eq("id", studentId).maybeSingle();
+  if (!studentRow) throw new Error("Save your profile first.");
+
   // Already done for this student? Don't redo it (and don't pay twice).
   const { data: existing } = await db.from("audits").select("id, findings, passed_gate, skip_reason").eq("company_id", companyId).eq("student_id", studentId).maybeSingle();
   if (existing) {
@@ -41,9 +44,6 @@ export async function processCompany(opts: { studentId: string; searchId: string
     // Audited earlier without a draft (for example no Gemini key then): try the draft again below.
     return await draft(existing.id, existing.findings as Finding[]);
   }
-
-  const { data: studentRow } = await db.from("students").select("*").eq("id", studentId).maybeSingle();
-  if (!studentRow) throw new Error("Save your profile first.");
 
   // Steps 2–3: read and measure. Both look in the cache first.
   if (!company.website) {
