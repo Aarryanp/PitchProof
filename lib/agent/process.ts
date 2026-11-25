@@ -122,7 +122,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
     const slug = `${co.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}-${Math.random().toString(36).slice(2, 7)}`;
     const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://pitch-proof.vercel.app").replace(/\/$/, "");
     const mail = await draftEmail({ student, company: co, contactName: contact.name, findings: list, offer: offerFor(packsFor(opts.skills)), pageUrl: `${site}/p/${slug}` });
-    await db.from("pitches").insert({
+    const { error: saveError } = await db.from("pitches").insert({
       audit_id: auditId,
       student_id: studentId,
       company_id: companyId,
@@ -133,6 +133,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
       email_body: mail.body,
       status: "draft",
     });
+    if (saveError) throw new Error(`The draft was written but couldn't be saved: ${saveError.message}`);
     return result("needs_approval", mail.passes ? "Email drafted. Review and approve it in Leads." : `Email drafted, but fix before approving: ${mail.problems.join("; ")}`, top);
   }
 }
