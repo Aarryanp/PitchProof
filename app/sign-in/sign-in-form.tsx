@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 export function SignInForm() {
   const params = useSearchParams();
   const [email, setEmail] = useState("");
+  const [google, setGoogle] = useState(false);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState(params.get("error") === "link" ? "That link has expired. Ask for a new one." : "");
 
@@ -33,17 +34,21 @@ export function SignInForm() {
 
   async function signInWithGoogle() {
     setError("");
+    setGoogle(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setError(error.message);
+    if (error) {
+      setError(error.message);
+      setGoogle(false);
+    }
   }
 
   if (state === "sent") {
     return (
-      <div className="mt-6 flex gap-3 rounded-md bg-primary/5 p-4 text-sm">
+      <div className="mt-6 flex gap-3 pp-rise rounded-2xl bg-card p-4 text-sm shadow-card">
         <MailCheck className="mt-0.5 size-4 shrink-0 text-primary" />
         <p>
           Check <span className="font-medium">{email}</span> for a sign-in link. You can close this tab.
@@ -54,8 +59,8 @@ export function SignInForm() {
 
   return (
     <>
-    <Button type="button" variant="outline" className="mt-6 w-full" onClick={signInWithGoogle}>
-      <GoogleIcon /> Continue with Google
+    <Button type="button" variant="secondary" size="lg" className="mt-8 w-full" disabled={google} onClick={signInWithGoogle}>
+      <GoogleIcon /> {google ? "Opening Google…" : "Continue with Google"}
     </Button>
     <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
       <div className="h-px flex-1 bg-border" /> or use your email <div className="h-px flex-1 bg-border" />
@@ -72,7 +77,7 @@ export function SignInForm() {
         onChange={(e) => setEmail(e.target.value)}
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" variant="outline" disabled={state === "sending"} className="mt-1">
+      <Button type="submit" size="lg" disabled={state === "sending"} className="mt-1">
         {state === "sending" ? "Sending…" : "Email me a link"}
       </Button>
     </form>

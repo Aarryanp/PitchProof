@@ -28,7 +28,7 @@ export function SearchForm() {
           <form action={action} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="skill_type">Skill</Label>
-              <select id="skill_type" name="skill_type" className="h-9 rounded-md border bg-background px-2 text-sm">
+              <select id="skill_type" name="skill_type" className="h-12 rounded-2xl border bg-card px-3 text-[15px]">
                 <option value="web">Web development</option>
                 <option value="design">Design</option>
               </select>

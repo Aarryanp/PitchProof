@@ -34,7 +34,7 @@ export function ExportButton({ results: r }: { results: Results }) {
     URL.revokeObjectURL(a.href);
   }
   return (
-    <Button variant="outline" onClick={download}>
+    <Button variant="secondary" onClick={download}>
       <Download /> Export numbers
     </Button>
   );

@@ -34,8 +34,17 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refreshes the session if it has expired.
-  await supabase.auth.getUser();
+  // Refreshes the session if it has expired. getClaims() checks the token
+  // locally, so this doesn't add a trip to Supabase on every screen change.
+  const { data } = await supabase.auth.getClaims();
+
+  // The home address opens the app for a signed-in student and the welcome
+  // screen for everyone else.
+  if (request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = data?.claims ? "/pipeline" : "/welcome";
+    return NextResponse.redirect(url);
+  }
   return response;
 }
 

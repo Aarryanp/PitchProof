@@ -3,6 +3,8 @@
 // falls back to sample data (lib/sample-data.ts) otherwise, with
 // `sample: true` so the screen can say so.
 
+import { cache } from "react";
+import { getSessionUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -27,17 +29,14 @@ import type {
 export type Viewer = { userId: string; email: string | null; student: Student | null };
 
 // Who is signed in, and their student row if they've saved a profile.
-export async function getViewer(): Promise<Viewer | null> {
+// cache(): the page and the layout share one lookup per request.
+export const getViewer = cache(async (): Promise<Viewer | null> => {
+  const user = await getSessionUser();
+  if (!user) return null;
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  if (!data.user) return null;
-  const { data: student } = await supabase
-    .from("students")
-    .select("*")
-    .eq("id", data.user.id)
-    .maybeSingle();
-  return { userId: data.user.id, email: data.user.email ?? null, student: (student as Student) ?? null };
-}
+  const { data: student } = await supabase.from("students").select("*").eq("id", user.id).maybeSingle();
+  return { userId: user.id, email: user.email, student: (student as Student) ?? null };
+});
 
 export async function getProfile(): Promise<{
   viewer: Viewer | null;
@@ -78,9 +77,10 @@ type AuditRow = { id: string; company_id: string; findings: Finding[]; passed_ga
 type PitchRow = { id: string; company_id: string; status: PitchStatus };
 type CompanyRow = { id: string; name: string; sector: string | null; city: string | null; website: string | null };
 
-export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; signedIn: boolean }> {
+export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; signedIn: boolean; hasProfile: boolean }> {
   const viewer = await getViewer();
-  if (!viewer) return { leads: sampleLeads, sample: true, signedIn: false };
+  if (!viewer) return { leads: sampleLeads, sample: true, signedIn: false, hasProfile: false };
+  const hasProfile = Boolean(viewer.student);
 
   const supabase = await createClient();
   const [{ data: companies }, { data: audits }, { data: pitches }] = await Promise.all([
@@ -90,7 +90,7 @@ export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; 
   ]);
 
   const rows = (companies as CompanyRow[]) ?? [];
-  if (rows.length === 0) return { leads: sampleLeads, sample: true, signedIn: true };
+  if (rows.length === 0) return { leads: sampleLeads, sample: true, signedIn: true, hasProfile };
 
   const leads = rows.map((c): LeadCard => {
     const audit = (audits as AuditRow[] | null)?.find((a) => a.company_id === c.id);
@@ -112,7 +112,7 @@ export async function getLeads(): Promise<{ leads: LeadCard[]; sample: boolean; 
       skipReason: audit?.skip_reason ?? (pitch?.status === "declined" ? "Said no" : null),
     };
   });
-  return { leads, sample: false, signedIn: true };
+  return { leads, sample: false, signedIn: true, hasProfile };
 }
 
 export async function getPitch(id: string): Promise<{ pitch: PitchDetail | null; sample: boolean }> {
