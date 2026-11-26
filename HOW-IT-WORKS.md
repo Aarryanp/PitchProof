@@ -132,3 +132,9 @@ For each part, write:
 - What it does: on the free Gemini plan, the main Flash model often answers "busy" or "over quota". The backup thought for a long time, so each email took 20–50 seconds and some failed. Now every Gemini call asks for as little "thinking" as the model allows (about 1–3 seconds per email). If a model is busy it tries the next one (flash-latest, then flash-lite-latest, then 3.5-flash), waits 5 seconds and goes round once more before giving up with a plain message. The email is also tidied so the link is always on its own line, and a draft that couldn't be saved now shows as an error instead of looking done.
 - Files: `lib/gemini.ts`, `lib/agent/email.ts`, `lib/agent/process.ts`.
 - How to test it: run the Nagpur clinics search again. Z-Edge, Doctors On Click and Varunam should get drafts in Leads within a few seconds each.
+
+## Pitch screen stuck on loading (26 Nov)
+
+- What it does: opening a draft from Leads used to stay on the grey loading shapes forever. The screen filled in the subject and message boxes while it was being drawn, which Flutter refuses, so the draw never finished. Now the boxes are filled as soon as the pitch arrives, before drawing.
+- Files: `mobile/lib/screens/pitch.dart`, `mobile/test/pitch_screen_test.dart` (new test: opens a draft and checks the email box and tone chips show).
+- How to test it: `cd mobile && flutter test`. On the phone, tap a lead marked "Needs approval": the pitch opens.
