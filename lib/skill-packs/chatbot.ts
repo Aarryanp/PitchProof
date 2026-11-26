@@ -12,8 +12,9 @@ export const chatbotPack: SkillPack = {
     const out: Finding[] = [];
     if (f.pageRead && !f.hasChat && !f.hasWhatsApp && !f.hasBooking)
       out.push({ problem: "Slow enquiries", evidence: "No chat, WhatsApp or online booking on the home page, only calling or email", source: "Website read (Olostep)", hard: true });
+    // Has a booking form or phone, just no chat: a nice-to-have, not a reason to pitch.
     else if (f.pageRead && !f.hasChat && !f.hasWhatsApp)
-      out.push({ problem: "No quick way to ask a question", evidence: "No chat or WhatsApp on the home page", source: "Website read (Olostep)", hard: true });
+      out.push({ problem: "No quick way to ask a question", evidence: "No chat or WhatsApp on the home page", source: "Website read (Olostep)", hard: false });
     return top3(out);
   },
 };

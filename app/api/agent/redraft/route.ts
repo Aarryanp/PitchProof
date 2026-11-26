@@ -1,7 +1,7 @@
 import { corsHeaders, json, studentFromRequest } from "@/lib/agent/auth";
 import { draftEmail, isTone } from "@/lib/agent/email";
 import { hasGemini } from "@/lib/gemini";
-import { offerFor, packsFor, parseSkills } from "@/lib/skill-packs";
+import { needsNewSite, offerFor, packsFor, parseSkills } from "@/lib/skill-packs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Finding, Student } from "@/lib/types";
 
@@ -51,7 +51,8 @@ export async function POST(req: Request) {
       company,
       contactName: contact?.name ?? null,
       findings: audit.findings ?? [],
-      offer: offerFor(packsFor(parseSkills(audit.skill_type))),
+      offer: offerFor(packsFor(parseSkills(audit.skill_type)), needsNewSite(audit.findings ?? [])),
+      newSite: needsNewSite(audit.findings ?? []),
       pageUrl: `${site}/p/${pitch.page_slug}`,
       tone: body.tone,
     });

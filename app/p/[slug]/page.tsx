@@ -75,26 +75,30 @@ function LetterView({ page }: { page: CompanyPageData }) {
         </ul>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold">What I made for you</h2>
-        <p className="mt-2 text-neutral-700">A new version of your home page, using the text from your current site:</p>
-        <ul className="mt-4 flex flex-col gap-2">
-          {page.fixes.map((f) => (
-            <li key={f} className="flex gap-2 text-neutral-800">
-              <Check className="mt-1 size-5 shrink-0 text-green-600" />
-              {f}
-            </li>
-          ))}
-        </ul>
-        {page.previewUrl && (
-          <a
-            href={page.previewUrl}
-            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border-2 border-primary px-6 font-medium text-primary sm:w-auto"
-          >
-            See your new home page <ArrowRight className="size-5" />
-          </a>
-        )}
-      </section>
+      {page.newSite ? (
+        <section className="mt-10">
+          <h2 className="text-xl font-semibold">What I made for you</h2>
+          <p className="mt-2 text-neutral-700">A simple website to get you back online:</p>
+          <ul className="mt-4 flex flex-col gap-2">
+            {page.fixes.map((f) => (
+              <li key={f} className="flex gap-2 text-neutral-800">
+                <Check className="mt-1 size-5 shrink-0 text-green-600" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          {page.previewUrl && (
+            <a
+              href={page.previewUrl}
+              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border-2 border-primary px-6 font-medium text-primary sm:w-auto"
+            >
+              See your new website <ArrowRight className="size-5" />
+            </a>
+          )}
+        </section>
+      ) : (
+        <SpeedFixes findings={page.findings} />
+      )}
 
       {page.projects.length > 0 && (
         <section className="mt-10">
@@ -135,3 +139,29 @@ function LetterView({ page }: { page: CompanyPageData }) {
     </main>
   );
 }
+
+// For a working site: Google's own list of fixes, with its estimate of how much
+// sooner the page would show. No redesign: the same site, made faster.
+function SpeedFixes({ findings }: { findings: CompanyPageData["findings"] }) {
+  const fixes = findings.flatMap((f) => f.fixes ?? []);
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold">What I can fix</h2>
+      <p className="mt-2 text-neutral-700">These changes keep your site looking exactly the same. They only make it work better.</p>
+      {fixes.length > 0 && (
+        <>
+          <ul className="mt-4 flex flex-col gap-2">
+            {fixes.map((f) => (
+              <li key={f.fix} className="flex items-baseline justify-between gap-4 rounded-lg border border-neutral-200 p-4">
+                <span className="text-neutral-800">{f.fix}</span>
+                <span className="shrink-0 font-semibold text-green-700">about {f.seconds} s sooner</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-sm text-neutral-500">Time saved on a phone, as estimated by Google PageSpeed Insights. The savings overlap, so they don&apos;t simply add up.</p>
+        </>
+      )}
+    </section>
+  );
+}
+

@@ -7,6 +7,7 @@ export type SkillPack = {
   key: string; // matches the skill keys in the app: web, design, seo, chatbot
   name: string;
   offer: string; // what the student offers, in a few plain words, for the email
+  rebuildOffer?: string; // the offer when the business has no working website
   findings: (f: SiteFacts) => Finding[];
 };
 
@@ -21,6 +22,12 @@ export function abandoned(f: SiteFacts, now = new Date()): Finding[] {
   if (f.copyrightYear && now.getFullYear() - f.copyrightYear >= 2)
     return [{ problem: "The site looks out of date", evidence: `The footer still says © ${f.copyrightYear}`, source: "Website read (Olostep)", hard: true }];
   return [];
+}
+
+// No working website: it doesn't open, it's a "for sale" page, or none is listed.
+// Only then does the student build a new page; working sites get measured fixes instead.
+export function needsNewSite(findings: Finding[]): boolean {
+  return findings.some((f) => f.hard && /doesn't open|domain for sale|^No website$/i.test(f.problem));
 }
 
 // Hard problems first, at most three.

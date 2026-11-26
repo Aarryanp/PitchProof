@@ -146,3 +146,15 @@ For each part, write:
 - Phone app: the Pitch screen's "Fix preview" card shows the link, with a button to copy it.
 - Files: `lib/agent/fix.ts` (new), `app/p/[slug]/preview/page.tsx` (new), `app/p/[slug]/page.tsx`, `lib/data.ts`, `lib/agent/process.ts`, `lib/types.ts`, `lib/sample-data.ts`, `supabase/schema.sql`, `mobile/lib/screens/pitch.dart`.
 - How to test it: open `/p/sample/preview` for the made-up clinic, or Kunal Hospital's draft link with `/preview` added.
+
+## Pitch only where it clearly helps (27 Nov)
+
+- Why: Kunal Hospital was pitched for "no WhatsApp button", but their site already has a helpline, a contact page and an appointment form. The generated home page was also worse than their real site. A template can't beat a real, working website.
+- What changed:
+  - **Tighter check.** A missing WhatsApp button (web) or chat (chatbot) is noted, but no longer counts as hard evidence when people can already call or book. "Hard to contact" (no phone, WhatsApp or form) still counts.
+  - **New website only for businesses without one.** Only when the site doesn't open, shows a "domain for sale" page, or isn't listed does the student make a new page (step 6). Working sites never get a redesign.
+  - **Slow sites get measured fixes.** PageSpeed now also saves the page's size and Google's own top fixes, with how many seconds each could save (for example "Remove code the page loads but never uses: about 2.4 s sooner"). The company page shows these under "What I can fix", and says the site will look exactly the same. Reports saved before this are measured again once (PageSpeed is free).
+  - **Emails match the case.** For a working site, the email talks about Google's measurements and fixes and never claims a new site was built. For a dead site, it offers the new site.
+  - **Undrafted leads are re-checked** with the current rules on the next search, using saved reads and measurements.
+  - Kunal's draft was moved to Skipped, and Kunal and Z-Edge now show "no real problem to pitch".
+- Files: `lib/pagespeed.ts`, `lib/skill-packs/*`, `lib/agent/process.ts`, `lib/agent/email.ts`, `lib/agent/fix.ts`, `lib/data.ts`, `app/p/[slug]/page.tsx`, `app/api/agent/redraft/route.ts`, `mobile/lib/screens/pitch.dart`, `mobile/lib/data/models.dart`, `tests/core.test.mjs` (new 4th test).

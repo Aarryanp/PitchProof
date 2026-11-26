@@ -46,7 +46,7 @@ export function fixesFor(findings: Finding[]): string[] {
     if (p.includes("whatsapp") || p.includes("contact") || p.includes("enquir") || p.includes("question")) out.add("Call and WhatsApp buttons on every screen");
     if (p.includes("breaks") || p.includes("layout")) out.add("Made for phone screens first");
     if (p.includes("secure")) out.add("Ready to run on HTTPS, so browsers don't warn visitors");
-    if (p.includes("no website")) out.add("A simple website, ready to go live");
+    if (p.includes("no website") || p.includes("doesn't open") || p.includes("for sale")) out.add("A simple website, ready to go live");
     if (p.includes("title") || p.includes("description") || p.includes("google")) out.add("A clear title and description for Google");
   }
   out.add("Your services, address and phone number up front");

@@ -32,6 +32,7 @@ export async function draftEmail(opts: {
   offer: string;
   pageUrl: string;
   tone?: Tone;
+  newSite?: boolean; // no working website: the student made a simple new one
 }): Promise<Draft> {
   const { student, company, findings } = opts;
   const first = student.name.trim().split(/\s+/)[0] || student.name;
@@ -57,7 +58,11 @@ THE LINK (include it exactly once, on its own line): ${opts.pageUrl}
 
 RULES
 - ${MIN_WORDS} to ${MAX_WORDS} words in the body, counting the greeting and sign-off. Aim for about ${tone === "short" ? 62 : 80}.
-- Shape: who I am (one line), what I noticed (the fact, with its number if it has one), what I made (a version of their home page that fixes it, at the link), a small ask (a 10-minute call or WhatsApp this week), an easy way to say no (for example: if not, just reply "no" and I won't write again).
+- Shape: who I am (one line), what I noticed (the fact, with its number if it has one), ${
+    opts.newSite
+      ? "what I made (a simple new website for them, at the link)"
+      : "what's at the link (Google's measurements and the specific fixes, which I can make on their current site without changing how it looks). Never say you built a new site or a new version"
+  }, a small ask (a 10-minute call or WhatsApp this week), an easy way to say no (for example: if not, just reply "no" and I won't write again).
 - Plain text only: no bullet points, no bold, no emojis, no markdown.
 - Layout: the greeting on its own line, then 2 or 3 short paragraphs with a blank line between them, the link on its own line, and the sign-off on its own line.
 - Never use these phrases: ${BANNED_PHRASES.map((p) => `"${p}"`).join(", ")}.
