@@ -1,3 +1,5 @@
+import type { FixPage } from "@/lib/agent/fix";
+
 // Sample data so every screen can be seen before the agent steps exist.
 // The businesses are made up on purpose (".example" websites), so no real
 // business is shown next to numbers we did not measure.
@@ -97,8 +99,8 @@ export const sampleCompanyPage: CompanyPageData = {
   },
   company: { name: "Sunrise Dental Care", city: "Nagpur" },
   findings: samplePitchBase.findings.filter((f) => f.hard),
-  before: { label: "Your site today", value: "9.1 s" },
-  after: { label: "The version I made", value: "1.8 s" },
+  fixes: ["A light page that opens fast on phones", "Call and WhatsApp buttons on every screen", "Your services, address and phone number up front"],
+  previewUrl: "/p/sample/preview",
   projects: samplePortfolio.map((p) => ({ title: p.title, oneLine: p.one_line, link: p.link, skillTag: p.skill_tag })),
 };
 
@@ -114,3 +116,18 @@ export const sampleResults = {
     { skill: "Online booking setup", count: 2 },
   ],
 };
+
+// The made-up dental clinic's new home page, for /p/sample/preview.
+export const sampleFixPage: FixPage = {
+  name: "Sunrise Dental Care",
+  tagline: "Family dental clinic in Dharampeth, Nagpur.",
+  about: "Sunrise Dental Care looks after children and adults, from check-ups and cleaning to braces and implants. Walk in or book a time that suits you.",
+  services: ["Check-ups and cleaning", "Fillings", "Root canal treatment", "Braces", "Implants", "Teeth whitening"],
+  highlights: ["Open 6 days a week", "Children welcome"],
+  address: "12 Example Road, Dharampeth, Nagpur",
+  hours: "Mon to Sat, 10 am to 8 pm",
+  phones: ["+91 90000 00000"],
+  email: "hello@sunrisedental.example",
+  whatsapp: null,
+};
+

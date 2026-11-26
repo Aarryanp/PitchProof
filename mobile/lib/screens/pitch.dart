@@ -232,13 +232,22 @@ class _PitchScreenState extends State<PitchScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Fix preview', style: T.h2),
             const SizedBox(height: 4),
-            Text('The faster version of their homepage, made for this pitch.', style: T.small),
+            Text('A new version of their home page, made from their own site\'s text. The email links to it.', style: T.small),
             const SizedBox(height: 14),
             Row(children: [
-              Expanded(child: _PreviewBox(label: 'Their site today', value: sample ? '9.1 s' : '—', after: false)),
+              Expanded(child: _PreviewBox(label: 'Their site today', value: sample ? '9.1 s' : 'Today', after: false)),
               const SizedBox(width: S.gap),
-              Expanded(child: _PreviewBox(label: 'Your fixed version', value: sample ? '1.8 s' : '—', after: true)),
+              Expanded(child: _PreviewBox(label: 'Your new version', value: sample ? '1.8 s' : 'New', after: true)),
             ]),
+            if (!sample && p.pageSlug != null) ...[
+              const SizedBox(height: 14),
+              SelectableText('$apiUrl/p/${p.pageSlug}/preview', style: T.small.copyWith(color: C.primary)),
+              const SizedBox(height: 10),
+              Btn('Copy link to open it', icon: Icons.link_rounded, kind: BtnKind.soft, big: false, expand: true, onTap: () {
+                Clipboard.setData(ClipboardData(text: '$apiUrl/p/${p.pageSlug}/preview'));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied. Paste it in your browser.')));
+              }),
+            ],
           ]),
         ),
       ),

@@ -7,9 +7,12 @@ import { cache } from "react";
 import { getSessionUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fixesFor, makeFixFor, type FixPage } from "@/lib/agent/fix";
+import { hasGemini } from "@/lib/gemini";
 import {
   getSamplePitch,
   sampleCompanyPage,
+  sampleFixPage,
   sampleLeads,
   samplePortfolio,
   sampleResults,
@@ -221,8 +224,36 @@ export async function getCompanyPage(slug: string): Promise<CompanyPageData | nu
     student: { name: row.students.name, city: row.students.city, bio: row.students.bio, photoUrl: row.students.photo_url, email: null, phone: null },
     company: row.companies,
     findings: (row.audits?.findings ?? []).filter((f) => f.hard),
-    before: { label: "Your site today", value: "—" },
-    after: { label: "The version I made", value: "—" },
+    fixes: fixesFor(row.audits?.findings ?? []),
+    previewUrl: `/p/${slug}/preview`,
     projects: (items ?? []).map((i) => ({ title: i.title, oneLine: i.one_line, link: i.link, skillTag: i.skill_tag })),
   };
+}
+
+// Step 6: the new home page for one company page. Made the first time it's
+// needed (from pages we already read, so no new credits) and saved on the
+// pitch, so later visits are instant.
+export async function getFixPreview(slug: string): Promise<{ fix: FixPage; studentName: string } | null> {
+  if (slug === "sample") return { fix: sampleFixPage, studentName: sampleCompanyPage.student.name };
+  if (!process.env.SUPABASE_SECRET_KEY) return null;
+  const db = createAdminClient();
+  const { data } = await db
+    .from("pitches")
+    .select("id, fix, company_id, companies(name, website, city, sector), students(name)")
+    .eq("page_slug", slug)
+    .neq("status", "declined")
+    .maybeSingle();
+  if (!data) return null;
+  const row = data as unknown as {
+    id: string;
+    fix: FixPage | null;
+    company_id: string;
+    companies: { name: string; website: string | null; city: string | null; sector: string | null };
+    students: { name: string };
+  };
+  if (row.fix) return { fix: row.fix, studentName: row.students.name };
+  if (!hasGemini()) return null;
+  const fix = await makeFixFor(row.company_id, row.companies);
+  await db.from("pitches").update({ fix, fix_url: `/p/${slug}/preview` }).eq("id", row.id);
+  return { fix, studentName: row.students.name };
 }

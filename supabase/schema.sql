@@ -89,6 +89,7 @@ create table public.pitches (
   contact_id uuid references public.contacts (id) on delete set null,
   pitch_type text not null default 'audit' check (pitch_type in ('audit', 'generic')),
   fix_url text,
+  fix jsonb, -- step 6: the generated home page (shown at /p/[slug]/preview)
   page_slug text unique,
   email_subject text,
   email_body text,
