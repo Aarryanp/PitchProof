@@ -22,7 +22,12 @@ class PitchScreen extends StatefulWidget {
 }
 
 class _PitchScreenState extends State<PitchScreen> {
-  late final Future<Loaded<Pitch?>> _data = Repo.pitch(widget.id);
+  // Fill the text boxes when the pitch arrives, not while the screen is being
+  // drawn: changing a text box mid-draw stopped the screen from ever showing.
+  late final Future<Loaded<Pitch?>> _data = Repo.pitch(widget.id).then((d) {
+    if (d.value != null) _fill(d.value!);
+    return d;
+  });
   final _subject = TextEditingController();
   final _body = TextEditingController();
   final _personal = TextEditingController();
@@ -93,7 +98,9 @@ class _PitchScreenState extends State<PitchScreen> {
   @override
   void initState() {
     super.initState();
-    _body.addListener(() => setState(() {}));
+    _body.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   void _fill(Pitch p) {
@@ -148,7 +155,6 @@ class _PitchScreenState extends State<PitchScreen> {
         builder: (context, snap) {
           final d = snap.data;
           final p = d?.value;
-          if (p != null) _fill(p);
           return ListView(
             padding: EdgeInsets.fromLTRB(S.page, top + 12, S.page, MediaQuery.of(context).padding.bottom + 32),
             children: [
