@@ -1,5 +1,6 @@
 import { cachedPagesFor } from "@/lib/agent/cache";
 import { draftEmail } from "@/lib/agent/email";
+import { makeFixFor } from "@/lib/agent/fix";
 import { qualityGate } from "@/lib/agent/gate";
 import { askJson, hasGemini } from "@/lib/gemini";
 import { readPage } from "@/lib/olostep";
@@ -134,6 +135,14 @@ export async function processCompany(opts: { studentId: string; searchId: string
       status: "draft",
     });
     if (saveError) throw new Error(`The draft was written but couldn't be saved: ${saveError.message}`);
+    // Step 6: the new home page the email links to. If it fails here, the
+    // company page makes it on the first visit instead.
+    try {
+      const fix = await makeFixFor(companyId, co);
+      await db.from("pitches").update({ fix, fix_url: `/p/${slug}/preview` }).eq("page_slug", slug);
+    } catch {
+      // ignore: made on first visit
+    }
     return result("needs_approval", mail.passes ? "Email drafted. Review and approve it in Leads." : `Email drafted, but fix before approving: ${mail.problems.join("; ")}`, top);
   }
 }

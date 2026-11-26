@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowRight, ExternalLink, Mail, MessageCircle } from "lucide-react";
+import { ArrowRight, Check, ExternalLink, Mail, MessageCircle } from "lucide-react";
 import { getCompanyPage } from "@/lib/data";
 import type { CompanyPageData } from "@/lib/types";
 
@@ -77,12 +77,23 @@ function LetterView({ page }: { page: CompanyPageData }) {
 
       <section className="mt-10">
         <h2 className="text-xl font-semibold">What I made for you</h2>
-        <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <Compare label={page.before.label} value={page.before.value} />
-          <ArrowRight className="size-5 text-neutral-400" />
-          <Compare label={page.after.label} value={page.after.value} highlight />
-        </div>
-        <p className="mt-2 text-sm text-neutral-500">Time to open the home page on a phone.</p>
+        <p className="mt-2 text-neutral-700">A new version of your home page, using the text from your current site:</p>
+        <ul className="mt-4 flex flex-col gap-2">
+          {page.fixes.map((f) => (
+            <li key={f} className="flex gap-2 text-neutral-800">
+              <Check className="mt-1 size-5 shrink-0 text-green-600" />
+              {f}
+            </li>
+          ))}
+        </ul>
+        {page.previewUrl && (
+          <a
+            href={page.previewUrl}
+            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg border-2 border-primary px-6 font-medium text-primary sm:w-auto"
+          >
+            See your new home page <ArrowRight className="size-5" />
+          </a>
+        )}
       </section>
 
       {page.projects.length > 0 && (
@@ -122,14 +133,5 @@ function LetterView({ page }: { page: CompanyPageData }) {
 
       <footer className="mt-16 text-center text-xs text-neutral-400">Sent with Pitchproof</footer>
     </main>
-  );
-}
-
-function Compare({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={highlight ? "rounded-lg border-2 border-primary/30 bg-primary/5 p-4" : "rounded-lg border border-neutral-200 p-4"}>
-      <p className="text-sm text-neutral-600">{label}</p>
-      <p className={highlight ? "text-3xl font-semibold text-primary" : "text-3xl font-semibold"}>{value}</p>
-    </div>
   );
 }

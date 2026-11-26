@@ -84,7 +84,7 @@ export type CompanyPageData = {
   student: { name: string; city: string | null; bio: string | null; photoUrl: string | null; email: string | null; phone: string | null };
   company: { name: string; city: string | null };
   findings: Finding[];
-  before: { label: string; value: string };
-  after: { label: string; value: string };
+  fixes: string[]; // what the new home page fixes, in plain words
+  previewUrl: string | null; // the new home page (step 6)
   projects: { title: string; oneLine: string | null; link: string | null; skillTag: string | null }[];
 };

@@ -138,3 +138,11 @@ For each part, write:
 - What it does: opening a draft from Leads used to stay on the grey loading shapes forever. The screen filled in the subject and message boxes while it was being drawn, which Flutter refuses, so the draw never finished. Now the boxes are filled as soon as the pitch arrives, before drawing.
 - Files: `mobile/lib/screens/pitch.dart`, `mobile/test/pitch_screen_test.dart` (new test: opens a draft and checks the email box and tone chips show).
 - How to test it: `cd mobile && flutter test`. On the phone, tap a lead marked "Needs approval": the pitch opens.
+
+## Step 6: the new home page (26 Nov)
+
+- What it does: the email promises "a new version of your home page", and now it exists. When a draft is written, Gemini reads the business's own website text (pages we already saved, so no new credits) and fills a small template: a one-line tagline, a short "about", up to 8 services, up to 3 highlights, the address, opening hours, phone numbers and email. It may only use facts from their site. Phone numbers and the email are kept only if they really appear in the site's text or our saved contacts. Next.js shows it at `/p/<slug>/preview` as a light, phone-first page with Call and WhatsApp buttons, a bar saying it's a preview made by the student, and no images, so it opens fast. The company page (`/p/<slug>`) now lists what the new version fixes and has a "See your new home page" button. If making the page failed when the draft was written, it is made on the first visit and saved.
+- Database: new column `pitches.fix` (the page's content). `pitches.fix_url` holds its address. Both go away with the pitch.
+- Phone app: the Pitch screen's "Fix preview" card shows the link, with a button to copy it.
+- Files: `lib/agent/fix.ts` (new), `app/p/[slug]/preview/page.tsx` (new), `app/p/[slug]/page.tsx`, `lib/data.ts`, `lib/agent/process.ts`, `lib/types.ts`, `lib/sample-data.ts`, `supabase/schema.sql`, `mobile/lib/screens/pitch.dart`.
+- How to test it: open `/p/sample/preview` for the made-up clinic, or Kunal Hospital's draft link with `/preview` added.
