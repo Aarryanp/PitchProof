@@ -8,6 +8,7 @@ import { getSessionUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fixesFor, makeFixFor, type FixPage } from "@/lib/agent/fix";
+import { needsNewSite } from "@/lib/skill-packs";
 import { hasGemini } from "@/lib/gemini";
 import {
   getSamplePitch,
@@ -224,8 +225,9 @@ export async function getCompanyPage(slug: string): Promise<CompanyPageData | nu
     student: { name: row.students.name, city: row.students.city, bio: row.students.bio, photoUrl: row.students.photo_url, email: null, phone: null },
     company: row.companies,
     findings: (row.audits?.findings ?? []).filter((f) => f.hard),
+    newSite: needsNewSite(row.audits?.findings ?? []),
     fixes: fixesFor(row.audits?.findings ?? []),
-    previewUrl: `/p/${slug}/preview`,
+    previewUrl: needsNewSite(row.audits?.findings ?? []) ? `/p/${slug}/preview` : null,
     projects: (items ?? []).map((i) => ({ title: i.title, oneLine: i.one_line, link: i.link, skillTag: i.skill_tag })),
   };
 }
@@ -239,7 +241,7 @@ export async function getFixPreview(slug: string): Promise<{ fix: FixPage; stude
   const db = createAdminClient();
   const { data } = await db
     .from("pitches")
-    .select("id, fix, company_id, companies(name, website, city, sector), students(name)")
+    .select("id, fix, company_id, companies(name, website, city, sector), students(name), audits(findings)")
     .eq("page_slug", slug)
     .neq("status", "declined")
     .maybeSingle();
@@ -250,7 +252,10 @@ export async function getFixPreview(slug: string): Promise<{ fix: FixPage; stude
     company_id: string;
     companies: { name: string; website: string | null; city: string | null; sector: string | null };
     students: { name: string };
+    audits: { findings: Finding[] } | null;
   };
+  // A new page only for businesses with no working website.
+  if (!needsNewSite(row.audits?.findings ?? [])) return null;
   if (row.fix) return { fix: row.fix, studentName: row.students.name };
   if (!hasGemini()) return null;
   const fix = await makeFixFor(row.company_id, row.companies);

@@ -1,9 +1,10 @@
-// The three small tests on the core flow (CLAUDE.md, "Tests").
+// The small tests on the core flow (CLAUDE.md, "Tests").
 // Run with: npm test
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { qualityGate } from "../lib/agent/gate.ts";
 import { canSend, checkEmail, emailPasses } from "../lib/pitch-rules.ts";
+import { needsNewSite } from "../lib/skill-packs/types.ts";
 
 const goodEmail = `Hi Dr. Sharma,
 
@@ -37,3 +38,13 @@ test("a pitch can't be sent without approval", () => {
   assert.equal(canSend({ status: "approved", approved_at: "2026-11-22T10:00:00Z", email_body: "too short" }), false);
   assert.equal(canSend({ status: "approved", approved_at: "2026-11-22T10:00:00Z", email_body: goodEmail }), true);
 });
+
+test("a new website is made only when the business has no working one", () => {
+  const slow = { problem: "Slow on phones", evidence: "Mobile speed score 31/100", source: "PageSpeed", hard: true };
+  const noWhatsApp = { problem: "No WhatsApp button", evidence: "No WhatsApp link, but people can call or book", source: "Olostep", hard: false };
+  assert.equal(needsNewSite([slow, noWhatsApp]), false);
+  assert.equal(qualityGate([noWhatsApp], { checked: true }).passed, false); // reachable site with no WhatsApp: no pitch
+  assert.equal(needsNewSite([{ problem: "Your website doesn't open", evidence: "x did not load", source: "Website check", hard: true }]), true);
+  assert.equal(needsNewSite([{ problem: "Your website address shows a “domain for sale” page", evidence: "parked", source: "Olostep", hard: true }]), true);
+});
+

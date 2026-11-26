@@ -178,6 +178,10 @@ class _PitchScreenState extends State<PitchScreen> {
     final allOk = checks.every((c) => c.ok);
     final editable = p.status == 'draft';
     final meta = [p.sector, p.city].whereType<String>().join(' · ');
+    // No working website: a new one was made. Otherwise Google's measured fixes.
+    final newSite = p.findings.any((f) => f.hard && RegExp(r"doesn't open|domain for sale|^No website$", caseSensitive: false).hasMatch(f.problem));
+    final speedFixes = [for (final f in p.findings) ...f.fixes];
+    final link = '$apiUrl/p/${p.pageSlug}${newSite ? '/preview' : ''}';
     return [
       if (sample) ...[const Settle(child: SampleNote('A made-up business. Approving here saves nothing.')), const SizedBox(height: 16)],
       Settle(
@@ -230,21 +234,40 @@ class _PitchScreenState extends State<PitchScreen> {
         index: 3,
         child: SoftCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Fix preview', style: T.h2),
+            Text(newSite ? 'New website' : 'What you can fix', style: T.h2),
             const SizedBox(height: 4),
-            Text('A new version of their home page, made from their own site\'s text. The email links to it.', style: T.small),
+            Text(
+              newSite
+                  ? 'They have no working website, so a simple new one was made from what we know about them. The email links to it.'
+                  : 'Their site works, so no redesign: Google\'s own fixes for it, with the time each could save. The email links to this.',
+              style: T.small,
+            ),
             const SizedBox(height: 14),
-            Row(children: [
-              Expanded(child: _PreviewBox(label: 'Their site today', value: sample ? '9.1 s' : 'Today', after: false)),
-              const SizedBox(width: S.gap),
-              Expanded(child: _PreviewBox(label: 'Your new version', value: sample ? '1.8 s' : 'New', after: true)),
-            ]),
+            if (newSite)
+              Row(children: [
+                Expanded(child: _PreviewBox(label: 'Their site today', value: 'Offline', after: false)),
+                const SizedBox(width: S.gap),
+                Expanded(child: _PreviewBox(label: 'Your new site', value: 'Ready', after: true)),
+              ])
+            else if (speedFixes.isEmpty)
+              Text('No speed fixes needed. The page lists the problems above.', style: T.small)
+            else
+              for (final f in speedFixes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(children: [
+                    const Icon(Icons.bolt_rounded, size: 18, color: C.green),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(f.fix, style: T.body.copyWith(fontSize: 14))),
+                    Text('${f.seconds} s', style: const TextStyle(fontWeight: FontWeight.w700, color: C.okFg)),
+                  ]),
+                ),
             if (!sample && p.pageSlug != null) ...[
               const SizedBox(height: 14),
-              SelectableText('$apiUrl/p/${p.pageSlug}/preview', style: T.small.copyWith(color: C.primary)),
+              SelectableText(link, style: T.small.copyWith(color: C.primary)),
               const SizedBox(height: 10),
               Btn('Copy link to open it', icon: Icons.link_rounded, kind: BtnKind.soft, big: false, expand: true, onTap: () {
-                Clipboard.setData(ClipboardData(text: '$apiUrl/p/${p.pageSlug}/preview'));
+                Clipboard.setData(ClipboardData(text: link));
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link copied. Paste it in your browser.')));
               }),
             ],

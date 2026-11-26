@@ -12,6 +12,8 @@ export type SiteFacts = {
   https: boolean;
   performance: number | null;
   loadSeconds: number | null;
+  pageMB: number | null;
+  speedFixes: { fix: string; seconds: number }[];
   seo: number | null;
   hasViewport: boolean | null;
   hasTitle: boolean | null;
@@ -61,6 +63,8 @@ export function siteFacts(url: string, page: PageRead, speed: SpeedResult): Site
     https: (report?.finalUrl ?? url).startsWith("https://"),
     performance: report?.performance ?? null,
     loadSeconds: report?.loadSeconds ?? null,
+    pageMB: report?.pageMB ?? null,
+    speedFixes: report?.topFixes ?? [],
     seo: report?.seo ?? null,
     hasViewport: report?.hasViewport ?? null,
     hasTitle: report?.hasTitle ?? null,

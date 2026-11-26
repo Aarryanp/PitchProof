@@ -10,6 +10,8 @@ export const skillPacks: SkillPack[] = [webPack, designPack, seoPack, chatbotPac
 
 // The app's skills arrive as a list (or "web,seo"). Skills without a pack yet
 // (content, social, video, app) are ignored; with none left we use web.
+export { needsNewSite } from "./types";
+
 export function parseSkills(input: unknown): string[] {
   const list = Array.isArray(input) ? input.map(String) : String(input ?? "").split(",");
   const clean = [...new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean))];
@@ -33,6 +35,7 @@ export function findingsFor(packs: SkillPack[], facts: SiteFacts): Finding[] {
 }
 
 // What the student offers, in plain words, for the email.
-export function offerFor(packs: SkillPack[]): string {
-  return packs.map((p) => p.offer).slice(0, 2).join(", and ");
+// With no working website, the web pack offers a new site instead of fixes.
+export function offerFor(packs: SkillPack[], newSite = false): string {
+  return packs.map((p) => (newSite && p.rebuildOffer ? p.rebuildOffer : p.offer)).slice(0, 2).join(", and ");
 }

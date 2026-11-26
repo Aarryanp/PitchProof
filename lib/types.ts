@@ -31,6 +31,8 @@ export type Finding = {
   evidence: string;
   source: string;
   hard: boolean;
+  // Slow sites: Google's own fixes and how many seconds each could save.
+  fixes?: { fix: string; seconds: number }[];
 };
 
 export type PitchStatus =
@@ -84,7 +86,8 @@ export type CompanyPageData = {
   student: { name: string; city: string | null; bio: string | null; photoUrl: string | null; email: string | null; phone: string | null };
   company: { name: string; city: string | null };
   findings: Finding[];
-  fixes: string[]; // what the new home page fixes, in plain words
-  previewUrl: string | null; // the new home page (step 6)
+  newSite: boolean; // no working website, so the student made a new one
+  fixes: string[]; // what the new home page fixes, in plain words (new sites only)
+  previewUrl: string | null; // the new home page (step 6, new sites only)
   projects: { title: string; oneLine: string | null; link: string | null; skillTag: string | null }[];
 };

@@ -65,7 +65,17 @@ const samplePitchBase: PitchDetail = {
   company: { name: "Sunrise Dental Care", website: "sunrisedental.example", sector: "Dental clinic", city: "Nagpur" },
   contact: { name: "Dr. Meera Kale", role: "Founder", email: "hello@sunrisedental.example", source: "Contact page" },
   findings: [
-    { problem: "Slow on mobile", evidence: "Mobile performance score 28/100; page takes 9.1 s to load", source: "PageSpeed Insights", hard: true },
+    {
+      problem: "Slow on mobile",
+      evidence: "Mobile performance score 28/100; page takes 9.1 s to load; the page downloads 6.4 MB",
+      source: "PageSpeed Insights",
+      hard: true,
+      fixes: [
+        { fix: "Shrink and resize the images", seconds: 3.1 },
+        { fix: "Remove code the page loads but never uses", seconds: 1.8 },
+        { fix: "Stop files from holding up the first view", seconds: 0.9 },
+      ],
+    },
     { problem: "Hard to contact", evidence: "No contact form, phone link or WhatsApp link on the home page", source: "Website read", hard: true },
     { problem: "Dated look", evidence: "Small grey text on a busy photo background; menu has 11 items", source: "Screenshot review", hard: false },
   ],
@@ -99,6 +109,7 @@ export const sampleCompanyPage: CompanyPageData = {
   },
   company: { name: "Sunrise Dental Care", city: "Nagpur" },
   findings: samplePitchBase.findings.filter((f) => f.hard),
+  newSite: false,
   fixes: ["A light page that opens fast on phones", "Call and WhatsApp buttons on every screen", "Your services, address and phone number up front"],
   previewUrl: "/p/sample/preview",
   projects: samplePortfolio.map((p) => ({ title: p.title, oneLine: p.one_line, link: p.link, skillTag: p.skill_tag })),

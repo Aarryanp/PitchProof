@@ -6,7 +6,7 @@ import { askJson, hasGemini } from "@/lib/gemini";
 import { readPage } from "@/lib/olostep";
 import { measure } from "@/lib/pagespeed";
 import { emailsIn, siteFacts } from "@/lib/skill-packs/facts";
-import { findingsFor, offerFor, packsFor } from "@/lib/skill-packs";
+import { findingsFor, needsNewSite, offerFor, packsFor } from "@/lib/skill-packs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Finding, Student } from "@/lib/types";
 
@@ -42,15 +42,23 @@ export async function processCompany(opts: { studentId: string; searchId: string
     const top = ((existing.findings as Finding[]) ?? []).find((f) => f.hard) ?? null;
     if (!existing.passed_gate) return result("skipped", existing.skip_reason ?? "Skipped", top);
     if (pitch) return result("needs_approval", "Already drafted.", top);
-    // Audited earlier without a draft (for example no Gemini key then): try the draft again below.
-    return await draft(existing.id, existing.findings as Finding[]);
+    // Passed earlier but has no draft yet (no email then, or the draft failed):
+    // check it again below with today's rules. Reads and speed checks come
+    // from the cache, so this costs no Olostep or Crustdata credits.
   }
+  // Save the audit: update the earlier one if there is one, else add it.
+  const saveAudit = async (row: { findings: Finding[]; passed_gate: boolean; skip_reason: string | null }) => {
+    const fields = { ...row, search_id: opts.searchId, skill_type: opts.skills.join(",") };
+    const { data } = existing
+      ? await db.from("audits").update(fields).eq("id", existing.id).select("id").single()
+      : await db.from("audits").insert({ ...fields, company_id: companyId, student_id: studentId }).select("id").single();
+    return data!.id as string;
+  };
 
   // Steps 2–3: read and measure. Both look in the cache first.
   if (!company.website) {
     const findings: Finding[] = [{ problem: "No website", evidence: "No website is listed for this business", source: "Crustdata", hard: true }];
-    const { data: audit } = await db.from("audits").insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skills.join(","), findings, passed_gate: true }).select("id").single();
-    return await draft(audit!.id, findings);
+    return await draft(await saveAudit({ findings, passed_gate: true, skip_reason: null }), findings);
   }
   const [page, speed] = await Promise.all([readPage(company.website), measure(company.website)]);
   const facts = siteFacts(company.website, page, speed);
@@ -86,11 +94,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
   if (!gate.passed && speed.status === "unavailable" && !gate.reason.startsWith("Not a "))
     return result("skipped", "No problem found yet, but the speed check couldn't run (PageSpeed key missing). It will be checked again next time.", findings[0] ?? null);
 
-  const { data: audit } = await db
-    .from("audits")
-    .insert({ company_id: companyId, student_id: studentId, search_id: opts.searchId, skill_type: opts.skills.join(","), findings, passed_gate: gate.passed, skip_reason: gate.passed ? null : gate.reason })
-    .select("id")
-    .single();
+  const auditId = await saveAudit({ findings, passed_gate: gate.passed, skip_reason: gate.passed ? null : gate.reason });
   if (!gate.passed) return result("skipped", gate.reason, findings[0] ?? null);
 
   // Step 5: find the person. Saved contacts first, then emails on pages we already read.
@@ -100,7 +104,7 @@ export async function processCompany(opts: { studentId: string; searchId: string
     const emails = [...new Set([...facts.emails, ...pages.flatMap(emailsIn)])];
     if (emails.length) await db.from("contacts").insert({ company_id: companyId, email: emails[0], source: "website (Olostep)" });
   }
-  return await draft(audit!.id, findings);
+  return await draft(auditId, findings);
 
   // Steps 6–8: page link + email draft, saved as a pitch with status "draft".
   async function draft(auditId: string, list: Finding[]): Promise<ProcessResult> {
@@ -122,7 +126,8 @@ export async function processCompany(opts: { studentId: string; searchId: string
 
     const slug = `${co.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)}-${Math.random().toString(36).slice(2, 7)}`;
     const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://pitch-proof.vercel.app").replace(/\/$/, "");
-    const mail = await draftEmail({ student, company: co, contactName: contact.name, findings: list, offer: offerFor(packsFor(opts.skills)), pageUrl: `${site}/p/${slug}` });
+    const newSite = needsNewSite(list);
+    const mail = await draftEmail({ student, company: co, contactName: contact.name, findings: list, offer: offerFor(packsFor(opts.skills), newSite), pageUrl: `${site}/p/${slug}`, newSite });
     const { error: saveError } = await db.from("pitches").insert({
       audit_id: auditId,
       student_id: studentId,
@@ -135,13 +140,17 @@ export async function processCompany(opts: { studentId: string; searchId: string
       status: "draft",
     });
     if (saveError) throw new Error(`The draft was written but couldn't be saved: ${saveError.message}`);
-    // Step 6: the new home page the email links to. If it fails here, the
-    // company page makes it on the first visit instead.
-    try {
-      const fix = await makeFixFor(companyId, co);
-      await db.from("pitches").update({ fix, fix_url: `/p/${slug}/preview` }).eq("page_slug", slug);
-    } catch {
-      // ignore: made on first visit
+    // Step 6: a new home page, only when they have no working website (a
+    // template can't beat a real, working site). If it fails here, the
+    // company page makes it on the first visit instead. Working sites get
+    // Google's measured fixes on the company page instead.
+    if (newSite) {
+      try {
+        const fix = await makeFixFor(companyId, co);
+        await db.from("pitches").update({ fix, fix_url: `/p/${slug}/preview` }).eq("page_slug", slug);
+      } catch {
+        // ignore: made on first visit
+      }
     }
     return result("needs_approval", mail.passes ? "Email drafted. Review and approve it in Leads." : `Email drafted, but fix before approving: ${mail.problems.join("; ")}`, top);
   }

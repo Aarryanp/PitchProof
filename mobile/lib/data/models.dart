@@ -51,13 +51,23 @@ class Lead {
 /// One problem the audit found. [hard] means the evidence is a number or a
 /// clear yes/no fact from a tool (the quality gate needs at least one).
 class Finding {
-  const Finding({required this.problem, required this.evidence, required this.source, required this.hard});
+  const Finding({required this.problem, required this.evidence, required this.source, required this.hard, this.fixes = const []});
   final String problem;
   final String evidence;
   final String source;
   final bool hard;
-  factory Finding.fromJson(Map<String, dynamic> j) =>
-      Finding(problem: '${j['problem'] ?? ''}', evidence: '${j['evidence'] ?? ''}', source: '${j['source'] ?? ''}', hard: j['hard'] == true);
+  /// Slow sites: Google's fixes and the seconds each could save.
+  final List<({String fix, num seconds})> fixes;
+  factory Finding.fromJson(Map<String, dynamic> j) => Finding(
+        problem: '${j['problem'] ?? ''}',
+        evidence: '${j['evidence'] ?? ''}',
+        source: '${j['source'] ?? ''}',
+        hard: j['hard'] == true,
+        fixes: [
+          for (final f in (j['fixes'] as List? ?? const []))
+            if (f is Map) (fix: '${f['fix'] ?? ''}', seconds: (f['seconds'] as num?) ?? 0),
+        ],
+      );
 }
 
 class Contact {
