@@ -164,3 +164,15 @@ For each part, write:
 - The check that asks Gemini "is this really a clinic?" read the "domain for sale" page and said no, so parked sites were wrongly skipped. It now runs only on working sites. The three parked clinics from the Nagpur search were moved back to "real problem found".
 - Google's "cache lifetimes" fix now has a plain name: "Let phones keep files instead of downloading them every visit".
 - Files: `lib/agent/process.ts`, `lib/pagespeed.ts`.
+
+## The email introduces you properly, and slow sites get no link (27 Nov)
+
+**What it does:** Every first email now opens with a real introduction: your full name, year, what you study, your city, why you're writing (from the goal you picked) and how you found them (you were looking at, say, clinics in Nagpur and checked their sites on your phone). For a slow website, the email explains the problem in plain words instead of sending a link: "it took about 15 seconds before the main content showed; Google's research says most people on phones leave after 3 seconds, so some visitors may give up before they see your phone number." No speed scores or megabytes. Only a business with a dead or for-sale site gets a link, to the new website that was made for them.
+
+**Why:** Aarryan's feedback: the "What I can fix" page wasn't convincing, "1.9 seconds sooner" means nothing to an owner, and a cold email needs a proper introduction.
+
+**Rule changes:** emails can now be up to 130 words (was 100) to fit the introduction, and the link rule is "at most one link" (was "exactly one").
+
+**Files:** `lib/agent/email.ts` (intro, `plainFact`, no link for slow sites), `lib/pitch-rules.ts` and `mobile/lib/data/pitch_rules.dart` (130 words, at most one link), `mobile/lib/screens/pitch.dart` (the fixes card is now just for you; no link to copy for slow sites), `tests/core.test.mjs` (new test).
+
+**How to test:** run `npm test`. In the app, open a slow-site draft and press Friendly for a fresh version: it should start with "I'm Aarryan Parakh, a 3rd year…" and have no link.
