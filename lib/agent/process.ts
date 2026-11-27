@@ -76,7 +76,8 @@ export async function processCompany(opts: { studentId: string; searchId: string
 
   // Clean-up: Crustdata labels some traders and clubs as clinics. Gemini reads
   // the page and says if this really is the kind of business searched for.
-  if (gate.passed && hasGemini() && page.status === "read" && company.sector) {
+  // Not for parked or dead sites: their page is a "for sale" notice, not the business.
+  if (gate.passed && hasGemini() && page.status === "read" && !facts.parked && facts.opens !== false && company.sector) {
     try {
       const v = await askJson<{ matches: boolean; reason: string }>(
         `Business name: ${company.name}\nSearched for: ${company.sector}\nHome page text (start):\n${facts.pageText.slice(0, 3000)}\n\nIs this business really a "${company.sector}" type of business that serves customers directly? Answer matches true or false, and a short reason (max 12 words).`,

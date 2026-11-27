@@ -40,6 +40,8 @@ const PLAIN: Record<string, string> = {
   "server-response-time": "Make the server answer faster",
   "font-display-insight": "Show text while fonts load",
   "third-parties-insight": "Trim heavy add-ons from other companies",
+  "cache-insight": "Let phones keep files instead of downloading them every visit",
+  "uses-long-cache-ttl": "Let phones keep files instead of downloading them every visit",
 };
 
 export type SpeedResult =

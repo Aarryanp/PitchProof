@@ -158,3 +158,9 @@ For each part, write:
   - **Undrafted leads are re-checked** with the current rules on the next search, using saved reads and measurements.
   - Kunal's draft was moved to Skipped, and Kunal and Z-Edge now show "no real problem to pitch".
 - Files: `lib/pagespeed.ts`, `lib/skill-packs/*`, `lib/agent/process.ts`, `lib/agent/email.ts`, `lib/agent/fix.ts`, `lib/data.ts`, `app/p/[slug]/page.tsx`, `app/api/agent/redraft/route.ts`, `mobile/lib/screens/pitch.dart`, `mobile/lib/data/models.dart`, `tests/core.test.mjs` (new 4th test).
+
+## Parked sites are leads, not "wrong business" (27 Nov)
+
+- The check that asks Gemini "is this really a clinic?" read the "domain for sale" page and said no, so parked sites were wrongly skipped. It now runs only on working sites. The three parked clinics from the Nagpur search were moved back to "real problem found".
+- Google's "cache lifetimes" fix now has a plain name: "Let phones keep files instead of downloading them every visit".
+- Files: `lib/agent/process.ts`, `lib/pagespeed.ts`.
