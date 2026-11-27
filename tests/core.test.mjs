@@ -48,3 +48,9 @@ test("a new website is made only when the business has no working one", () => {
   assert.equal(needsNewSite([{ problem: "Your website address shows a “domain for sale” page", evidence: "parked", source: "Olostep", hard: true }]), true);
 });
 
+
+test("a slow-site email needs no link, but two links still fail", () => {
+  const noLink = goodEmail.replace(/I made a faster version[^\n]*\n[^\n]*\n/, "I can make your current site fast without changing how it looks.\n");
+  assert.equal(emailPasses(noLink), true, JSON.stringify(checkEmail(noLink)));
+  assert.equal(emailPasses(`${goodEmail} https://b.example`), false);
+});

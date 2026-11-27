@@ -11,7 +11,7 @@ const bannedPhrases = [
 ];
 
 const minWords = 60;
-const maxWords = 100;
+const maxWords = 130; // room for a short, proper introduction
 
 class RuleCheck {
   const RuleCheck(this.label, this.ok, [this.detail]);
@@ -32,7 +32,7 @@ List<RuleCheck> checkEmail(String body) {
   return [
     RuleCheck('$minWords–$maxWords words', words >= minWords && words <= maxWords, '$words words'),
     RuleCheck('No banned phrases', found.isEmpty, found.isEmpty ? null : 'Found: ${found.join(', ')}'),
-    RuleCheck('Exactly one link', links == 1, '$links found'),
+    RuleCheck('At most one link', links <= 1, '$links found'), // none for slow sites
     RuleCheck('Easy way to say no', optOut),
     RuleCheck('Plain text (no bullets, bold or emojis)', !fancy),
   ];

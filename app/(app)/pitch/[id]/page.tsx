@@ -115,7 +115,7 @@ async function Review({ params }: { params: Promise<{ id: string }> }) {
             <Card className="settle" style={{ "--i": 3 } as React.CSSProperties}>
               <CardHeader>
                 <CardTitle>Company page</CardTitle>
-                <CardDescription>The private page your email links to. Hidden from search engines.</CardDescription>
+                <CardDescription>The private page for this company, hidden from search engines. The email only links to it when a new website was made.</CardDescription>
               </CardHeader>
               <CardContent>
                 <a href={`/p/${pitch.pageSlug}`} target="_blank" className="press inline-flex items-center gap-1.5 rounded-full bg-[#e7ecff] px-4 py-2 text-sm font-semibold text-primary">

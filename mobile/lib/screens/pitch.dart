@@ -239,7 +239,7 @@ class _PitchScreenState extends State<PitchScreen> {
             Text(
               newSite
                   ? 'They have no working website, so a simple new one was made from what we know about them. The email links to it.'
-                  : 'Their site works, so no redesign: Google\'s own fixes for it, with the time each could save. The email links to this.',
+                  : 'For you, not them: Google\'s own fixes for their site, so you know what the work is. The email tells them in plain words and has no link.',
               style: T.small,
             ),
             const SizedBox(height: 14),
@@ -250,7 +250,7 @@ class _PitchScreenState extends State<PitchScreen> {
                 Expanded(child: _PreviewBox(label: 'Your new site', value: 'Ready', after: true)),
               ])
             else if (speedFixes.isEmpty)
-              Text('No speed fixes needed. The page lists the problems above.', style: T.small)
+              Text('No speed fixes needed. The email uses the problems above.', style: T.small)
             else
               for (final f in speedFixes)
                 Padding(
@@ -262,7 +262,7 @@ class _PitchScreenState extends State<PitchScreen> {
                     Text('${f.seconds} s', style: const TextStyle(fontWeight: FontWeight.w700, color: C.okFg)),
                   ]),
                 ),
-            if (!sample && p.pageSlug != null) ...[
+            if (!sample && newSite && p.pageSlug != null) ...[
               const SizedBox(height: 14),
               SelectableText(link, style: T.small.copyWith(color: C.primary)),
               const SizedBox(height: 10),

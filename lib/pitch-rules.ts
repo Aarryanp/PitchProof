@@ -12,7 +12,9 @@ export const BANNED_PHRASES = [
 ];
 
 export const MIN_WORDS = 60;
-export const MAX_WORDS = 100;
+// 130, not 100: the email opens with a short, proper introduction of the
+// student (Aarryan's feedback, 27 Nov), which needs about 30 more words.
+export const MAX_WORDS = 130;
 
 export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -42,7 +44,9 @@ export function checkEmail(body: string): RuleCheck[] {
       ok: found.length === 0,
       detail: found.length ? `Found: “${found.join("”, “")}”` : undefined,
     },
-    { label: "Exactly one link", ok: links === 1, detail: `${links} found` },
+    // At most one link. A slow-site email has none: the facts are in the email
+    // itself. A dead-site email links to the new website that was made.
+    { label: "At most one link", ok: links <= 1, detail: `${links} found` },
     { label: "Easy way to say no", ok: hasOptOut },
     {
       label: "Plain text (no bullets, bold or emojis)",
